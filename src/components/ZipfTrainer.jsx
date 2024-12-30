@@ -3,6 +3,15 @@ import React, { useState, useEffect } from 'react';
 const ZIPF_ADJUSTMENT = 0.05;
 const ZIPF_RANGE = 0.1;
 
+// Get display preferences from localStorage or use defaults
+const getDisplayPreferences = () => {
+  const saved = localStorage.getItem('displayPreferences');
+  return saved ? JSON.parse(saved) : {
+    showExamples: false,
+    showSynonyms: false
+  };
+};
+
 const ZipfTrainer = () => {
   const [wordData, setWordData] = useState(null);
   const [currentWord, setCurrentWord] = useState(null);
@@ -11,6 +20,12 @@ const ZipfTrainer = () => {
   const [currentDefIndex, setCurrentDefIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [displayPreferences, setDisplayPreferences] = useState(getDisplayPreferences);
+
+  // Save display preferences whenever they change
+  useEffect(() => {
+    localStorage.setItem('displayPreferences', JSON.stringify(displayPreferences));
+  }, [displayPreferences]);
 
   // Load word frequency data
   useEffect(() => {
@@ -53,7 +68,8 @@ const ZipfTrainer = () => {
         meaning.definitions.map(def => ({
           definition: def.definition,
           partOfSpeech: meaning.partOfSpeech,
-          example: def.example
+          example: def.example,
+          synonyms: meaning.synonyms
         }))
       );
 
@@ -100,6 +116,13 @@ const ZipfTrainer = () => {
     );
   };
 
+  const togglePreference = (key) => {
+    setDisplayPreferences(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
   if (loading) {
     return <div className="text-center py-8">Loading word data...</div>;
   }
@@ -107,9 +130,31 @@ const ZipfTrainer = () => {
   return (
     <div className="max-w-2xl mx-auto p-4">
       <div className="bg-white rounded-lg shadow-md p-6">
-        {/* Current Zipf Level */}
-        <div className="text-sm text-gray-600 mb-4">
-          Current Zipf Level: {currentZipf.toFixed(2)}
+        {/* Settings and Zipf Level */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="space-x-4">
+            <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                className="form-checkbox rounded text-blue-600"
+                checked={displayPreferences.showExamples}
+                onChange={() => togglePreference('showExamples')}
+              />
+              <span className="ml-2">Show Examples</span>
+            </label>
+            <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                className="form-checkbox rounded text-blue-600"
+                checked={displayPreferences.showSynonyms}
+                onChange={() => togglePreference('showSynonyms')}
+              />
+              <span className="ml-2">Show Synonyms</span>
+            </label>
+          </div>
+          <div className="text-sm text-gray-600">
+            Current Zipf Level: {currentZipf.toFixed(2)}
+          </div>
         </div>
 
         {/* Definition Display */}
@@ -123,7 +168,7 @@ const ZipfTrainer = () => {
               <p className="text-xl mt-2">
                 {definitions[currentDefIndex].definition}
               </p>
-              {definitions[currentDefIndex].example && (
+              {displayPreferences.showExamples && definitions[currentDefIndex].example && (
                 <p className="text-gray-600 mt-2 italic">
                   Example: {definitions[currentDefIndex].example}
                 </p>
@@ -131,6 +176,11 @@ const ZipfTrainer = () => {
               <p className="text-sm text-gray-500 mt-1">
                 ({definitions[currentDefIndex].partOfSpeech})
               </p>
+              {displayPreferences.showSynonyms && definitions[currentDefIndex].synonyms?.length > 0 && (
+                <p className="text-sm text-gray-600 mt-2">
+                  Synonyms: {definitions[currentDefIndex].synonyms.join(", ")}
+                </p>
+              )}
             </div>
 
             {/* Word Display */}
