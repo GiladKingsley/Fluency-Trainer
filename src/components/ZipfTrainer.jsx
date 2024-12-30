@@ -1,31 +1,39 @@
+// src/components/ZipfTrainer.jsx
 import React, { useState, useEffect } from 'react';
 
 const ZIPF_ADJUSTMENT = 0.05;
 const ZIPF_RANGE = 0.1;
 
-// Get display preferences from localStorage or use defaults
-const getDisplayPreferences = () => {
-  const saved = localStorage.getItem('displayPreferences');
+// Get settings from localStorage or use defaults
+const getStoredSettings = () => {
+  const saved = localStorage.getItem('trainerSettings');
   return saved ? JSON.parse(saved) : {
-    showExamples: false,
-    showSynonyms: false
+    displayPreferences: {
+      showExamples: false,
+      showSynonyms: false
+    },
+    currentZipf: 5.0
   };
 };
 
 const ZipfTrainer = () => {
   const [wordData, setWordData] = useState(null);
   const [currentWord, setCurrentWord] = useState(null);
-  const [currentZipf, setCurrentZipf] = useState(5.0);
+  const storedSettings = getStoredSettings();
+  const [currentZipf, setCurrentZipf] = useState(storedSettings.currentZipf);
   const [definitions, setDefinitions] = useState([]);
   const [currentDefIndex, setCurrentDefIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showAnswer, setShowAnswer] = useState(false);
-  const [displayPreferences, setDisplayPreferences] = useState(getDisplayPreferences);
+  const [displayPreferences, setDisplayPreferences] = useState(storedSettings.displayPreferences);
 
-  // Save display preferences whenever they change
+  // Save all settings whenever they change
   useEffect(() => {
-    localStorage.setItem('displayPreferences', JSON.stringify(displayPreferences));
-  }, [displayPreferences]);
+    localStorage.setItem('trainerSettings', JSON.stringify({
+      displayPreferences,
+      currentZipf
+    }));
+  }, [displayPreferences, currentZipf]);
 
   // Load word frequency data
   useEffect(() => {
@@ -160,12 +168,30 @@ const ZipfTrainer = () => {
         {/* Definition Display */}
         {currentWord && definitions[currentDefIndex] && (
           <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-medium">Definition 
-                {definitions.length > 1 && 
-                  ` (${currentDefIndex + 1}/${definitions.length})`}:
-              </h3>
-              <p className="text-xl mt-2">
+            <div className="relative">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-medium">Definition{' '}
+                  {definitions.length > 1 && 
+                    `(${currentDefIndex + 1}/${definitions.length})`}
+                </h3>
+                {definitions.length > 1 && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentDefIndex((prev) => (prev - 1 + definitions.length) % definitions.length)}
+                      className="text-gray-600 hover:text-gray-800"
+                    >
+                      ← Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentDefIndex((prev) => (prev + 1) % definitions.length)}
+                      className="text-gray-600 hover:text-gray-800"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
+              </div>
+              <p className="text-xl">
                 {definitions[currentDefIndex].definition}
               </p>
               {displayPreferences.showExamples && definitions[currentDefIndex].example && (
@@ -189,14 +215,7 @@ const ZipfTrainer = () => {
                 <h2 className="text-2xl font-bold text-green-600">
                   {currentWord}
                 </h2>
-                {definitions.length > 1 && (
-                  <button
-                    onClick={cycleDefinition}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                  >
-                    Next Definition
-                  </button>
-                )}
+
               </div>
             ) : (
               <button
