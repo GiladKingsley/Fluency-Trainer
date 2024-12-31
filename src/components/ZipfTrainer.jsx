@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-
+//please work lol
 const ZIPF_ADJUSTMENT = 0.05;
 const ZIPF_RANGE = 0.1;
 const PARTS_OF_SPEECH = ['noun', 'verb', 'adjective', 'adverb'];
