@@ -1,6 +1,6 @@
 # Fluency Trainer
 
-[![GitHub Pages Status](https://img.shields.io/github/deployments/GiladKingsley/Fluency-Training/github-pages?label=GitHub%20Pages&logo=github)](https://giladkingsley.github.io/Fluency-Training/)
+[![GitHub Pages Status](https://img.shields.io/github/deployments/GiladKingsley/Fluency-Trainer/github-pages?label=GitHub%20Pages&logo=github)](https://giladkingsley.github.io/Fluency-Trainer/)
 
 This project is designed to enhance **spoken fluency** by focusing on the active retrieval of words based on their definitions. It addresses the need for targeted output practice, going beyond passive language input methods like reading.
 
