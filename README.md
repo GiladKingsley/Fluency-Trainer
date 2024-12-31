@@ -1,4 +1,4 @@
-# Fluency Training
+# Fluency Trainer
 
 [![GitHub Pages Status](https://img.shields.io/github/deployments/GiladKingsley/Fluency-Training/github-pages?label=GitHub%20Pages&logo=github)](https://giladkingsley.github.io/Fluency-Training/)
 
