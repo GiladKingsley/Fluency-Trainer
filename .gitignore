@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Extras
+repomix-output.txt
+public/data/en_frequencies.json
