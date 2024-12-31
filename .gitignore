@@ -25,4 +25,4 @@ dist-ssr
 
 # Extras
 repomix-output.txt
-public/data/en_frequencies.json
+# public/data/en_frequencies.json
