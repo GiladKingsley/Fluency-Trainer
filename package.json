@@ -13,9 +13,8 @@
     "preview": "vite preview",
     "predeploy": "npm run build-prod",
     "deploy": "gh-pages -d dist",
-    "gh-pages": "vite build --mode production --base=/Fluency-Trainer/ && gh-pages -d docs"
-  },
-  "dependencies": {
+    "gh-pages": "vite build --mode production --base=/Fluency-Trainer/ && gh-pages -d docs && powershell -Command \"Copy-Item docs/index.html docs/404.html\""  },
+    "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
