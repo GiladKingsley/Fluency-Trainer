@@ -3,14 +3,17 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://giladkingsley.github.io/Fluency-Trainer/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build-dev": "vite build",
+    "build-uat": "vite build --mode uat",
+    "build-prod": "vite build --mode production",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "predeploy": "npm run build-prod",
+    "deploy": "gh-pages -d dist",
+    "gh-pages": "vite build --mode production --base=/Fluency-Trainer/ && gh-pages -d docs"
   },
   "dependencies": {
     "react": "^18.2.0",
