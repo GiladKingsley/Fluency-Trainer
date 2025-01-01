@@ -149,7 +149,7 @@ const ZipfTrainer = () => {
 
   // Load word frequency data
   useEffect(() => {
-    fetch('/data/en_frequencies.json')
+    fetch('/Fluency-Trainer/data/en_frequencies.json') // Use absolute path with base
       .then((response) => response.json())
       .then((data) => {
         setWordData(data.words);
