@@ -128,14 +128,18 @@ const ZipfTrainer = () => {
           body: JSON.stringify({
             contents: [{
               parts: [{
-                text: `You are an AI that creates a single, high-quality cloze-test sentence for a given English word. Your purpose is to help adults train their language fluency.
+                text: `You are an AI that creates high-quality cloze-test exercises for a given English word. Your purpose is to help adults train their language fluency by testing the same word in different contexts.
 
 You will be given a word in \`<word>\` tags. Your response must follow these strict rules:
 
 **1. Valid Word Handling:**
-- For any valid English word, your entire output must be a single cloze-test sentence enclosed in \`<cloze-test>\` tags.
-- In the sentence, the target word must be replaced by three underscores (\`___\`).
-- **Example:** For the word "happy", a valid output would be \`<cloze-test>She felt incredibly ___ after receiving the good news.</cloze-test>\`.
+- For any valid English word, you must create exactly TWO separate sentences, each showing the target word in a different context.
+- Each sentence must be enclosed in its own \`<sentence1>\` and \`<sentence2>\` tags.
+- In each sentence, the target word must be replaced by three underscores (\`___\`).
+- The two sentences should demonstrate different meanings, uses, or contexts of the same word.
+- **Example:** For the word "bank", a valid output would be:
+\`<sentence1>After receiving her paycheck, Sarah walked to the ___ to deposit the money into her savings account.</sentence1>
+<sentence2>The children enjoyed their picnic on the grassy ___ of the river while watching the ducks swim by.</sentence2>\`
 
 **2. Invalid Word Handling:**
 - If the input is not a real English word, your entire output must be the exact text \`NOT_A_WORD\`.
@@ -150,10 +154,12 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
 - **Exception:** You may treat widely known place names with cultural significance as valid words (e.g., "hollywood", "paris").
 
 **3. Sentence Quality Requirements:**
-- **Unambiguous:** The sentence's context must strongly point to the target word, leaving no room for synonyms or other plausible words.
-- **Exact Match:** The blank (\`___\`) must be fillable *only* by the exact form of the word provided. For example, if given the word \`running\`, the sentence must require \`running\`, not \`run\` or \`ran\`.
-- **Simplicity:** The sentence should be clear, natural, and easy for an adult learner to understand.
-- **No Synonyms:** Do not use synonyms of the target word within the sentence itself.
+- **Two distinct contexts:** Each sentence should show the word in a meaningfully different context or usage.
+- **Unambiguous:** Each sentence's context must strongly point to the target word, leaving no room for synonyms or other plausible words.
+- **Exact Match:** Each blank (\`___\`) must be fillable *only* by the exact form of the word provided.
+- **Longer and descriptive:** Each sentence should be substantial (10+ words) and include descriptive details that make the context very clear.
+- **Independent:** Each sentence should be completely independent and understandable on its own.
+- **No Synonyms:** Do not use synonyms of the target word within either sentence.
 
 <word>${word}</word>`
               }]
@@ -173,10 +179,15 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
         return 'NOT_A_WORD';
       }
       
-      // Extract cloze test from tags
-      const clozeMatch = text.match(/<cloze-test>(.*?)<\/cloze-test>/s);
-      if (clozeMatch) {
-        return clozeMatch[1].trim();
+      // Extract sentences from tags
+      const sentence1Match = text.match(/<sentence1>(.*?)<\/sentence1>/s);
+      const sentence2Match = text.match(/<sentence2>(.*?)<\/sentence2>/s);
+      
+      if (sentence1Match && sentence2Match) {
+        return {
+          sentence1: sentence1Match[1].trim(),
+          sentence2: sentence2Match[1].trim()
+        };
       }
       
       throw new Error('Invalid response format');
@@ -555,24 +566,43 @@ User's definition: ${userDef}`
                   API Key Required
                 </h3>
                 <p className="text-sm text-gray-700 mb-2">
-                  Cloze tests require a Gemini API key. Please switch to Reverse Mode to enter your key first.
+                  Cloze sentences require a Gemini API key. Please switch to Reverse Mode to enter your key first.
                 </p>
               </div>
             ) : generatingCloze ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-                <p className="text-gray-600">Generating cloze test...</p>
+                <p className="text-gray-600">Generating cloze sentences...</p>
               </div>
             ) : clozeTest ? (
               <div className="space-y-4">
-                {/* Cloze Test Display */}
+                {/* Both Sentences Display */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
-                  <h3 className="text-lg font-medium text-gray-800 mb-3">
-                    Fill in the blank:
+                  <h3 className="text-lg font-medium text-gray-800 mb-4">
+                    Fill in the blanks with the same word:
                   </h3>
-                  <p className="text-xl text-gray-700 leading-relaxed">
-                    {clozeTest}
-                  </p>
+                  
+                  {typeof clozeTest === 'object' ? (
+                    <div className="space-y-4">
+                      <div className="bg-white p-4 rounded-lg border border-gray-200">
+                        <div className="text-sm font-medium text-gray-600 mb-2">Sentence 1:</div>
+                        <p className="text-lg text-gray-700 leading-relaxed">
+                          {clozeTest.sentence1}
+                        </p>
+                      </div>
+                      
+                      <div className="bg-white p-4 rounded-lg border border-gray-200">
+                        <div className="text-sm font-medium text-gray-600 mb-2">Sentence 2:</div>
+                        <p className="text-lg text-gray-700 leading-relaxed">
+                          {clozeTest.sentence2}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xl text-gray-700 leading-relaxed">
+                      {clozeTest}
+                    </p>
+                  )}
                 </div>
 
                 {/* Answer Input */}
