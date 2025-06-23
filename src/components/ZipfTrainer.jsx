@@ -10,6 +10,7 @@ const getInitialState = () => {
   const savedPartsOfSpeech = localStorage.getItem('activePartsOfSpeech');
   const savedMode = localStorage.getItem('trainingMode');
   const savedGeminiKey = localStorage.getItem('geminiApiKey');
+  const savedReverseZipfLevel = localStorage.getItem('reverseZipfLevel');
 
   return {
     displayPreferences: savedPreferences
@@ -32,6 +33,7 @@ const getInitialState = () => {
       : PARTS_OF_SPEECH,
     trainingMode: savedMode || 'normal',
     geminiApiKey: savedGeminiKey || '',
+    reverseZipfLevel: savedReverseZipfLevel ? parseFloat(savedReverseZipfLevel) : 5.0,
   };
 };
 
@@ -51,6 +53,7 @@ const ZipfTrainer = () => {
     activePartsOfSpeech: initialActivePos,
     trainingMode: initialMode,
     geminiApiKey: initialGeminiKey,
+    reverseZipfLevel: initialReverseZipfLevel,
   } = getInitialState();
   const [displayPreferences, setDisplayPreferences] =
     useState(initialPreferences);
@@ -65,7 +68,7 @@ const ZipfTrainer = () => {
   const [score, setScore] = useState(null);
   const [correctDefinition, setCorrectDefinition] = useState('');
   const [grading, setGrading] = useState(false);
-  const [reverseZipfLevel, setReverseZipfLevel] = useState(5.0);
+  const [reverseZipfLevel, setReverseZipfLevel] = useState(initialReverseZipfLevel);
 
   const getWordsInZipfRange = useCallback(() => {
     if (!wordData) return [];
@@ -254,6 +257,10 @@ const ZipfTrainer = () => {
     localStorage.setItem('geminiApiKey', geminiApiKey);
   }, [geminiApiKey]);
 
+  useEffect(() => {
+    localStorage.setItem('reverseZipfLevel', reverseZipfLevel.toString());
+  }, [reverseZipfLevel]);
+
   // Select new word when relevant state changes
   useEffect(() => {
     if (!loading && wordData) {
@@ -286,7 +293,7 @@ const ZipfTrainer = () => {
 
 **Grading Rubric:**
 *   **1: Irrelevant.** The definition is completely wrong or unrelated.
-*   **2: Vaguely Related.** Touches upon a related concept but misses the core meaning.
+*   **2: Vaguely Related.** Touches upon a related concept but misses the core meaning. Uses the root of the word in the definition.
 *   **3: Core Idea.** The main concept is correct, but the definition is imperfect. A smart individual would understand the description matches the word.
 *   **4: Accurate.** A solid, correct definition that shows good understanding.
 *   **5: Precise & Nuanced.** A comprehensive, almost dictionary-quality definition.
