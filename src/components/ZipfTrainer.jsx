@@ -626,6 +626,14 @@ User's definition: ${userDef}`
                 <textarea
                   value={userDefinition}
                   onChange={(e) => setUserDefinition(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (userDefinition.trim() && !grading && score === null && geminiApiKey) {
+                        gradeDefinition(currentWord, userDefinition);
+                      }
+                    }
+                  }}
                   placeholder="Type your definition here... Be as detailed and accurate as possible!"
                   className="w-full h-36 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-700 placeholder-gray-400"
                   disabled={grading || score !== null}
