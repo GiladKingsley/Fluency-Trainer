@@ -5,63 +5,49 @@ const ZIPF_RANGE = 0.1;
 const PARTS_OF_SPEECH = ['noun', 'verb', 'adjective', 'adverb'];
 
 const getInitialState = () => {
-  const savedPreferences = localStorage.getItem('displayPreferences');
   const savedZipfLevels = localStorage.getItem('zipfLevels');
-  const savedPartsOfSpeech = localStorage.getItem('activePartsOfSpeech');
   const savedMode = localStorage.getItem('trainingMode');
   const savedGeminiKey = localStorage.getItem('geminiApiKey');
   const savedReverseZipfLevel = localStorage.getItem('reverseZipfLevel');
+  const savedNormalZipfLevel = localStorage.getItem('normalZipfLevel');
 
   return {
-    displayPreferences: savedPreferences
-      ? JSON.parse(savedPreferences)
-      : {
-          showExamples: false,
-          showSynonyms: false,
-        },
     zipfLevels: savedZipfLevels
       ? JSON.parse(savedZipfLevels)
       : {
-          noun: 5.0,
-          verb: 5.0,
-          adjective: 5.0,
-          adverb: 5.0,
           default: 5.0,
         },
-    activePartsOfSpeech: savedPartsOfSpeech
-      ? JSON.parse(savedPartsOfSpeech)
-      : PARTS_OF_SPEECH,
     trainingMode: savedMode || 'normal',
     geminiApiKey: savedGeminiKey || '',
     reverseZipfLevel: savedReverseZipfLevel ? parseFloat(savedReverseZipfLevel) : 5.0,
+    normalZipfLevel: savedNormalZipfLevel ? parseFloat(savedNormalZipfLevel) : 5.0,
   };
 };
 
 const ZipfTrainer = () => {
   const [wordData, setWordData] = useState(null);
   const [currentWord, setCurrentWord] = useState(null);
-  const [currentPartOfSpeech, setCurrentPartOfSpeech] = useState(null);
-  const [definitions, setDefinitions] = useState([]);
-  const [currentDefIndex, setCurrentDefIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showAnswer, setShowAnswer] = useState(false);
 
   // Get initial state from localStorage or defaults
   const {
-    displayPreferences: initialPreferences,
     zipfLevels: initialZipfLevels,
-    activePartsOfSpeech: initialActivePos,
     trainingMode: initialMode,
     geminiApiKey: initialGeminiKey,
     reverseZipfLevel: initialReverseZipfLevel,
+    normalZipfLevel: initialNormalZipfLevel,
   } = getInitialState();
-  const [displayPreferences, setDisplayPreferences] =
-    useState(initialPreferences);
   const [zipfLevels, setZipfLevels] = useState(initialZipfLevels);
-  const [activePartsOfSpeech, setActivePartsOfSpeech] =
-    useState(initialActivePos);
   const [trainingMode, setTrainingMode] = useState(initialMode);
   const [geminiApiKey, setGeminiApiKey] = useState(initialGeminiKey);
+  
+  // Normal mode state (cloze test)
+  const [clozeTest, setClozeTest] = useState('');
+  const [userAnswer, setUserAnswer] = useState('');
+  const [normalZipfLevel, setNormalZipfLevel] = useState(initialNormalZipfLevel);
+  const [generatingCloze, setGeneratingCloze] = useState(false);
+  const [normalScore, setNormalScore] = useState(null);
   
   // Reverse mode state
   const [userDefinition, setUserDefinition] = useState('');
@@ -70,10 +56,49 @@ const ZipfTrainer = () => {
   const [grading, setGrading] = useState(false);
   const [reverseZipfLevel, setReverseZipfLevel] = useState(initialReverseZipfLevel);
 
-  const getWordsInZipfRange = useCallback(() => {
+  // Simple Levenshtein distance for fuzzy matching
+  const levenshteinDistance = (str1, str2) => {
+    const matrix = [];
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+    return matrix[str2.length][str1.length];
+  };
+
+  // Check if user answer matches target word (with typo tolerance)
+  const isAnswerCorrect = (userInput, targetWord) => {
+    const normalizedUser = userInput.toLowerCase().trim();
+    const normalizedTarget = targetWord.toLowerCase();
+    
+    // Exact match
+    if (normalizedUser === normalizedTarget) return true;
+    
+    // Allow 1 character difference for words 4+ letters
+    // Allow 2 character difference for words 8+ letters
+    const maxDistance = targetWord.length >= 8 ? 2 : targetWord.length >= 4 ? 1 : 0;
+    return levenshteinDistance(normalizedUser, normalizedTarget) <= maxDistance;
+  };
+
+  const getWordsInZipfRange = useCallback((zipfLevel) => {
     if (!wordData) return [];
 
-    const targetZipf = zipfLevels[currentPartOfSpeech || 'default'];
+    const targetZipf = zipfLevel;
     const minZipf = targetZipf - ZIPF_RANGE / 2;
     const maxZipf = targetZipf + ZIPF_RANGE / 2;
 
@@ -82,67 +107,129 @@ const ZipfTrainer = () => {
         ([_, data]) => data.zipf >= minZipf && data.zipf <= maxZipf,
       )
       .map(([word]) => word);
-  }, [wordData, zipfLevels, currentPartOfSpeech]);
+  }, [wordData]);
 
-  const fetchWordDefinition = useCallback(
-    async (word) => {
-      try {
-        const response = await fetch(
-          `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`,
-        );
+  const generateClozeTest = useCallback(async (word) => {
+    if (!geminiApiKey) {
+      alert('Please enter your Gemini API key to use cloze tests');
+      return null;
+    }
 
-        if (!response.ok) {
-          throw new Error('Word not found');
+    setGeneratingCloze(true);
+    
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `You are an AI that creates a single, high-quality cloze-test sentence for a given English word. Your purpose is to help adults train their language fluency.
+
+You will be given a word in \`<word>\` tags. Your response must follow these strict rules:
+
+**1. Valid Word Handling:**
+- For any valid English word, your entire output must be a single cloze-test sentence enclosed in \`<cloze-test>\` tags.
+- In the sentence, the target word must be replaced by three underscores (\`___\`).
+- **Example:** For the word "happy", a valid output would be \`<cloze-test>She felt incredibly ___ after receiving the good news.</cloze-test>\`.
+
+**2. Invalid Word Handling:**
+- If the input is not a real English word, your entire output must be the exact text \`NOT_A_WORD\`.
+- Do not use any tags for this output.
+- Invalid words include:
+    - Numbers (e.g., "5", "123")
+    - Single letters (e.g., "s", "x")
+    - Symbols (e.g., "&", "@")
+    - Random character combinations (e.g., "pvzr")
+    - Malformed words (e.g., "thing's", "w8")
+    - Most personal names or obscure trademarks (e.g., "Isabella", "Noah")
+- **Exception:** You may treat widely known place names with cultural significance as valid words (e.g., "hollywood", "paris").
+
+**3. Sentence Quality Requirements:**
+- **Unambiguous:** The sentence's context must strongly point to the target word, leaving no room for synonyms or other plausible words.
+- **Exact Match:** The blank (\`___\`) must be fillable *only* by the exact form of the word provided. For example, if given the word \`running\`, the sentence must require \`running\`, not \`run\` or \`ran\`.
+- **Simplicity:** The sentence should be clear, natural, and easy for an adult learner to understand.
+- **No Synonyms:** Do not use synonyms of the target word within the sentence itself.
+
+<word>${word}</word>`
+              }]
+            }]
+          })
         }
+      );
 
-        const data = await response.json();
-
-        // Filter meanings to only include active parts of speech
-        let availableMeanings = data[0].meanings.filter((m) =>
-          activePartsOfSpeech.includes(m.partOfSpeech),
-        );
-
-        // If no meanings match our active parts of speech, try another word
-        if (availableMeanings.length === 0) {
-          throw new Error('No matching parts of speech');
-        }
-
-        // Set the part of speech for this word
-        setCurrentPartOfSpeech(availableMeanings[0].partOfSpeech);
-
-        // Collect definitions
-        const allDefinitions = availableMeanings.flatMap((meaning) =>
-          meaning.definitions.map((def) => ({
-            definition: def.definition,
-            partOfSpeech: meaning.partOfSpeech,
-            example: def.example,
-            synonyms: meaning.synonyms,
-          })),
-        );
-
-        setDefinitions(allDefinitions);
-        setCurrentDefIndex(0);
-      } catch (error) {
-        console.error('Error fetching definition:', error);
-        throw error; // Let selectNewWord handle the retry
+      if (!response.ok) {
+        throw new Error('Failed to generate cloze test');
       }
-    },
-    [activePartsOfSpeech],
-  );
+
+      const data = await response.json();
+      const text = data.candidates[0].content.parts[0].text.trim();
+      
+      if (text === 'NOT_A_WORD') {
+        return 'NOT_A_WORD';
+      }
+      
+      // Extract cloze test from tags
+      const clozeMatch = text.match(/<cloze-test>(.*?)<\/cloze-test>/s);
+      if (clozeMatch) {
+        return clozeMatch[1].trim();
+      }
+      
+      throw new Error('Invalid response format');
+    } catch (error) {
+      console.error('Error generating cloze test:', error);
+      throw error;
+    } finally {
+      setGeneratingCloze(false);
+    }
+  }, [geminiApiKey]);
+
+  const selectNewWordNormal = useCallback(async () => {
+    if (!wordData) return;
+
+    const wordsInRange = getWordsInZipfRange(normalZipfLevel);
+    if (wordsInRange.length === 0) {
+      console.error('No words found in range');
+      return;
+    }
+
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (attempts < maxAttempts) {
+      const randomWord = wordsInRange[Math.floor(Math.random() * wordsInRange.length)];
+      
+      try {
+        const clozeResult = await generateClozeTest(randomWord);
+        if (clozeResult === 'NOT_A_WORD') {
+          attempts++;
+          continue; // Try another word
+        }
+        
+        setCurrentWord(randomWord);
+        setClozeTest(clozeResult);
+        setUserAnswer('');
+        setNormalScore(null);
+        setShowAnswer(false);
+        return;
+      } catch (error) {
+        attempts++;
+        if (attempts === maxAttempts) {
+          console.error('Failed to generate cloze test after', maxAttempts, 'attempts');
+          return;
+        }
+      }
+    }
+  }, [wordData, normalZipfLevel, generateClozeTest, getWordsInZipfRange]);
 
   const selectNewWordReverse = useCallback(() => {
     if (!wordData) return;
 
-    const targetZipf = reverseZipfLevel;
-    const minZipf = targetZipf - ZIPF_RANGE / 2;
-    const maxZipf = targetZipf + ZIPF_RANGE / 2;
-
-    const wordsInRange = Object.entries(wordData)
-      .filter(
-        ([_, data]) => data.zipf >= minZipf && data.zipf <= maxZipf,
-      )
-      .map(([word]) => word);
-
+    const wordsInRange = getWordsInZipfRange(reverseZipfLevel);
     if (wordsInRange.length === 0) {
       console.error('No words found in range');
       return;
@@ -156,47 +243,17 @@ const ZipfTrainer = () => {
     setScore(null);
     setCorrectDefinition('');
     setShowAnswer(false);
-  }, [wordData, reverseZipfLevel]);
+  }, [wordData, reverseZipfLevel, getWordsInZipfRange]);
 
   const selectNewWord = useCallback(async () => {
     if (!wordData) return;
 
     if (trainingMode === 'reverse') {
       selectNewWordReverse();
-      return;
+    } else {
+      await selectNewWordNormal();
     }
-
-    let attempts = 0;
-    const maxAttempts = 10;
-
-    while (attempts < maxAttempts) {
-      const wordsInRange = getWordsInZipfRange();
-      if (wordsInRange.length === 0) {
-        console.error('No words found in range');
-        return;
-      }
-
-      const randomWord =
-        wordsInRange[Math.floor(Math.random() * wordsInRange.length)];
-
-      try {
-        setCurrentWord(randomWord);
-        setShowAnswer(false);
-        await fetchWordDefinition(randomWord);
-        return; // Success!
-      } catch (error) {
-        attempts++;
-        if (attempts === maxAttempts) {
-          console.error(
-            'Failed to find suitable word after',
-            maxAttempts,
-            'attempts',
-          );
-          return;
-        }
-      }
-    }
-  }, [wordData, getWordsInZipfRange, fetchWordDefinition, trainingMode, selectNewWordReverse]);
+  }, [wordData, trainingMode, selectNewWordReverse, selectNewWordNormal]);
 
   // Function to filter out invalid words
   const filterValidWords = (words) => {
@@ -252,22 +309,9 @@ const ZipfTrainer = () => {
 
   // Save state to localStorage
   useEffect(() => {
-    localStorage.setItem(
-      'displayPreferences',
-      JSON.stringify(displayPreferences),
-    );
-  }, [displayPreferences]);
-
-  useEffect(() => {
     localStorage.setItem('zipfLevels', JSON.stringify(zipfLevels));
   }, [zipfLevels]);
 
-  useEffect(() => {
-    localStorage.setItem(
-      'activePartsOfSpeech',
-      JSON.stringify(activePartsOfSpeech),
-    );
-  }, [activePartsOfSpeech]);
 
   useEffect(() => {
     localStorage.setItem('trainingMode', trainingMode);
@@ -281,12 +325,16 @@ const ZipfTrainer = () => {
     localStorage.setItem('reverseZipfLevel', reverseZipfLevel.toString());
   }, [reverseZipfLevel]);
 
+  useEffect(() => {
+    localStorage.setItem('normalZipfLevel', normalZipfLevel.toString());
+  }, [normalZipfLevel]);
+
   // Select new word when relevant state changes
   useEffect(() => {
     if (!loading && wordData) {
       selectNewWord();
     }
-  }, [loading, wordData, zipfLevels, activePartsOfSpeech, trainingMode, selectNewWord]);
+  }, [loading, wordData, trainingMode, selectNewWord]);
 
   const gradeDefinition = useCallback(async (word, userDef) => {
     if (!geminiApiKey) {
@@ -357,43 +405,56 @@ User's definition: ${userDef}`
     }
   }, [geminiApiKey]);
 
+  const handleNormalAnswer = () => {
+    if (!userAnswer.trim()) return;
+    
+    const correct = isAnswerCorrect(userAnswer, currentWord);
+    setNormalScore(correct ? 1 : 0);
+    setShowAnswer(true);
+    // Don't adjust difficulty here - wait for user to click "Next Word"
+  };
+
   const handleDifficulty = (harder) => {
-    const pos = currentPartOfSpeech || 'default';
-    // Higher Zipf = easier words, so "harder" button should decrease Zipf
-    setZipfLevels((prev) => ({
-      ...prev,
-      [pos]: harder
-        ? prev[pos] - ZIPF_ADJUSTMENT  // Make harder (lower Zipf)
-        : prev[pos] + ZIPF_ADJUSTMENT, // Make easier (higher Zipf)
-    }));
+    // This is now only used for manual difficulty adjustment if needed
+    if (trainingMode === 'normal') {
+      setNormalZipfLevel(prev => harder ? prev - ZIPF_ADJUSTMENT : prev + ZIPF_ADJUSTMENT);
+    }
   };
 
-  const togglePartOfSpeech = (pos) => {
-    setActivePartsOfSpeech((prev) => {
-      if (prev.includes(pos)) {
-        // Don't allow removing last part of speech
-        if (prev.length === 1) return prev;
-        return prev.filter((p) => p !== pos);
-      } else {
-        return [...prev, pos];
-      }
-    });
-  };
+  // Removed togglePartOfSpeech function as we no longer filter by parts of speech
 
-  const togglePreference = (key) => {
-    setDisplayPreferences((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
+  // Removed togglePreference function as we no longer have display preferences
 
   const handleModeChange = (mode) => {
     setTrainingMode(mode);
     // Reset state when changing modes
     setShowAnswer(false);
+    
+    // Reset normal mode state
+    setClozeTest('');
+    setUserAnswer('');
+    setNormalScore(null);
+    
+    // Reset reverse mode state
     setUserDefinition('');
     setScore(null);
     setCorrectDefinition('');
+  };
+
+  const handleNextWordNormal = () => {
+    // Apply difficulty adjustment based on the current score
+    if (normalScore !== null) {
+      if (normalScore === 1) {
+        // Correct - make it harder (lower Zipf)
+        setNormalZipfLevel(prev => prev - ZIPF_ADJUSTMENT);
+      } else {
+        // Incorrect - make it easier (higher Zipf)
+        setNormalZipfLevel(prev => prev + ZIPF_ADJUSTMENT);
+      }
+    }
+    
+    // Select new word
+    selectNewWord();
   };
 
   const handleNextWordReverse = () => {
@@ -474,159 +535,124 @@ User's definition: ${userDef}`
         </div>
 
         {/* Settings and Zipf Level */}
-        <div className="flex flex-col gap-4 mb-6">
-          <div className="flex justify-between items-center">
-            {trainingMode === 'normal' && (
-              <div className="space-x-4">
-                {/* Toggle for Show Examples */}
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={displayPreferences.showExamples}
-                    onChange={() => togglePreference('showExamples')}
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                  <span className="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                    Show Examples
-                  </span>
-                </label>
-
-                {/* Toggle for Show Synonyms */}
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={displayPreferences.showSynonyms}
-                    onChange={() => togglePreference('showSynonyms')}
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                  <span className="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                    Show Synonyms
-                  </span>
-                </label>
-              </div>
-            )}
-            <div className="bg-gray-50 px-3 py-2 rounded-lg">
-              <div className="text-xs text-gray-500 mb-1">Difficulty Level</div>
-              <div className="text-sm font-semibold text-gray-700">
-                {trainingMode === 'reverse' 
-                  ? reverseZipfLevel.toFixed(2)
-                  : zipfLevels[currentPartOfSpeech || 'default'].toFixed(2)}
-                {trainingMode === 'normal' && currentPartOfSpeech && (
-                  <span className="text-xs text-gray-500 ml-1">({currentPartOfSpeech})</span>
-                )}
-              </div>
+        <div className="flex justify-end mb-6">
+          <div className="bg-gray-50 px-3 py-2 rounded-lg">
+            <div className="text-xs text-gray-500 mb-1">Difficulty Level</div>
+            <div className="text-sm font-semibold text-gray-700">
+              {trainingMode === 'reverse' 
+                ? reverseZipfLevel.toFixed(2)
+                : normalZipfLevel.toFixed(2)}
             </div>
           </div>
-
-          {/* Parts of Speech Selection - Only for Normal Mode */}
-          {trainingMode === 'normal' && (
-            <div className="flex gap-2 flex-wrap">
-              {PARTS_OF_SPEECH.map((pos) => (
-                <label key={pos} className="inline-flex items-center">
-                  <input
-                    type="checkbox"
-                    className="form-checkbox rounded text-blue-600"
-                    checked={activePartsOfSpeech.includes(pos)}
-                    onChange={() => togglePartOfSpeech(pos)}
-                  />
-                  <span className="ml-2 capitalize">{pos}</span>
-                </label>
-              ))}
-            </div>
-          )}
         </div>
 
-        {/* Normal Mode - Definition Display */}
-        {trainingMode === 'normal' && currentWord && definitions[currentDefIndex] && (
-          <div className="space-y-4">
-            <div className="relative">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-medium">
-                  Definition{' '}
-                  {definitions.length > 1 &&
-                    `(${currentDefIndex + 1}/${definitions.length})`}
+        {/* Normal Mode - Cloze Test Display */}
+        {trainingMode === 'normal' && (
+          <div className="space-y-6">
+            {!geminiApiKey ? (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <h3 className="text-sm font-medium text-yellow-800 mb-2">
+                  API Key Required
                 </h3>
-                {definitions.length > 1 && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        setCurrentDefIndex(
-                          (prev) =>
-                            (prev - 1 + definitions.length) %
-                            definitions.length,
-                        )
+                <p className="text-sm text-gray-700 mb-2">
+                  Cloze tests require a Gemini API key. Please switch to Reverse Mode to enter your key first.
+                </p>
+              </div>
+            ) : generatingCloze ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+                <p className="text-gray-600">Generating cloze test...</p>
+              </div>
+            ) : clozeTest ? (
+              <div className="space-y-4">
+                {/* Cloze Test Display */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
+                  <h3 className="text-lg font-medium text-gray-800 mb-3">
+                    Fill in the blank:
+                  </h3>
+                  <p className="text-xl text-gray-700 leading-relaxed">
+                    {clozeTest}
+                  </p>
+                </div>
+
+                {/* Answer Input */}
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    value={userAnswer}
+                    onChange={(e) => setUserAnswer(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !showAnswer) {
+                        handleNormalAnswer();
                       }
-                      className="text-gray-600 hover:text-gray-800"
+                    }}
+                    placeholder="Type your answer here..."
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 placeholder-gray-400"
+                    disabled={showAnswer}
+                  />
+                  
+                  {!showAnswer && (
+                    <button
+                      onClick={handleNormalAnswer}
+                      disabled={!userAnswer.trim()}
+                      className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
                     >
-                      ← Previous
+                      Submit Answer
                     </button>
+                  )}
+                </div>
+
+                {/* Answer Feedback */}
+                {showAnswer && (
+                  <div className="space-y-4">
+                    <div className={`p-4 rounded-xl border-2 ${
+                      normalScore === 1 
+                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' 
+                        : 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200'
+                    }`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-lg font-semibold text-gray-800">
+                          {normalScore === 1 ? 'Correct!' : 'Incorrect'}
+                        </h4>
+                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                          normalScore === 1 
+                            ? 'bg-green-200 text-green-800' 
+                            : 'bg-red-200 text-red-800'
+                        }`}>
+                          {normalScore === 1 ? 'Right' : 'Wrong'}
+                        </span>
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="bg-white p-3 rounded-lg border border-gray-100">
+                          <h5 className="font-medium text-gray-800 mb-1">
+                            Correct Answer
+                          </h5>
+                          <p className="text-gray-700">{currentWord}</p>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-gray-100">
+                          <h5 className="font-medium text-gray-800 mb-1">
+                            Your Answer
+                          </h5>
+                          <p className={`${
+                            normalScore === 1 ? 'text-green-700' : 'text-red-600'
+                          }`}>{userAnswer}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
                     <button
-                      onClick={() =>
-                        setCurrentDefIndex(
-                          (prev) => (prev + 1) % definitions.length,
-                        )
-                      }
-                      className="text-gray-600 hover:text-gray-800"
+                      onClick={handleNextWordNormal}
+                      className="w-full px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
                     >
-                      Next →
+                      Next Word
                     </button>
                   </div>
                 )}
               </div>
-              <p className="text-xl">
-                {definitions[currentDefIndex].definition}
-              </p>
-              {displayPreferences.showExamples &&
-                definitions[currentDefIndex].example && (
-                  <p className="text-gray-600 mt-2 italic">
-                    Example: {definitions[currentDefIndex].example}
-                  </p>
-                )}
-              <p className="text-sm text-gray-500 mt-1">
-                ({definitions[currentDefIndex].partOfSpeech})
-              </p>
-              {displayPreferences.showSynonyms &&
-                definitions[currentDefIndex].synonyms?.length > 0 && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    Synonyms:{' '}
-                    {definitions[currentDefIndex].synonyms.join(', ')}
-                  </p>
-                )}
-            </div>
-
-            {/* Word Display */}
-            {showAnswer ? (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold text-green-600">
-                  {currentWord}
-                </h2>
-              </div>
             ) : (
-              <button
-                onClick={() => setShowAnswer(true)}
-                className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                Show Word
-              </button>
-            )}
-
-            {/* Difficulty Buttons */}
-            {showAnswer && (
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => handleDifficulty(false)}
-                  className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                >
-                  Easy
-                </button>
-                <button
-                  onClick={() => handleDifficulty(true)}
-                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                >
-                  Difficult
-                </button>
+              <div className="text-center py-8">
+                <p className="text-gray-600">Loading word...</p>
               </div>
             )}
           </div>
