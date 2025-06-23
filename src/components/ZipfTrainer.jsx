@@ -56,6 +56,10 @@ const ZipfTrainer = () => {
   const [grading, setGrading] = useState(false);
   const [reverseZipfLevel, setReverseZipfLevel] = useState(initialReverseZipfLevel);
 
+  // API Key modal state
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [tempApiKey, setTempApiKey] = useState('');
+
   // Simple Levenshtein distance for fuzzy matching
   const levenshteinDistance = (str1, str2) => {
     const matrix = [];
@@ -522,38 +526,42 @@ User's definition: ${userDef}`
             </button>
           </div>
           
-          {/* Gemini API Key Input for Reverse Mode - Only show if not set */}
-          {trainingMode === 'reverse' && !geminiApiKey && (
-            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <h3 className="text-sm font-medium text-yellow-800 mb-2">
-                API Key Required
-              </h3>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Enter your Gemini API Key to start:
-              </label>
-              <input
-                type="password"
-                value={geminiApiKey}
-                onChange={(e) => setGeminiApiKey(e.target.value)}
-                placeholder="Enter your Gemini API key"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                Get your free API key from: <a href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://ai.google.dev/</a>
-              </p>
-            </div>
-          )}
         </div>
 
-        {/* Settings and Zipf Level */}
-        <div className="flex justify-end mb-6">
-          <div className="bg-gray-50 px-3 py-2 rounded-lg">
-            <div className="text-xs text-gray-500 mb-1">Difficulty Level</div>
-            <div className="text-sm font-semibold text-gray-700">
-              {trainingMode === 'reverse' 
-                ? reverseZipfLevel.toFixed(2)
-                : normalZipfLevel.toFixed(2)}
+        {/* Header with Settings */}
+        <div className="flex justify-between items-start mb-6">
+          <div className="flex items-center gap-4">
+            <div className="bg-gray-50 px-3 py-2 rounded-lg">
+              <div className="text-xs text-gray-500 mb-1">Difficulty Level</div>
+              <div className="text-sm font-semibold text-gray-700">
+                {trainingMode === 'reverse' 
+                  ? reverseZipfLevel.toFixed(2)
+                  : normalZipfLevel.toFixed(2)}
+              </div>
             </div>
+            {geminiApiKey && (
+              <div className="flex items-center text-sm text-green-600">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                AI Ready
+              </div>
+            )}
+          </div>
+          
+          {/* Settings Menu */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setTempApiKey(geminiApiKey);
+                setShowApiKeyModal(true);
+              }}
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              title="Settings"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -565,9 +573,18 @@ User's definition: ${userDef}`
                 <h3 className="text-sm font-medium text-yellow-800 mb-2">
                   API Key Required
                 </h3>
-                <p className="text-sm text-gray-700 mb-2">
-                  Cloze sentences require a Gemini API key. Please switch to Reverse Mode to enter your key first.
+                <p className="text-sm text-gray-700 mb-3">
+                  Cloze sentences require a Gemini API key. Click "Set API Key" above to get started.
                 </p>
+                <button
+                  onClick={() => {
+                    setTempApiKey('');
+                    setShowApiKeyModal(true);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  Set API Key
+                </button>
               </div>
             ) : generatingCloze ? (
               <div className="text-center py-8">
@@ -689,8 +706,32 @@ User's definition: ${userDef}`
         )}
 
         {/* Reverse Mode - Word Display and Definition Input */}
-        {trainingMode === 'reverse' && currentWord && (
+        {trainingMode === 'reverse' && (
           <div className="space-y-6">
+            {!geminiApiKey ? (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <h3 className="text-sm font-medium text-yellow-800 mb-2">
+                  API Key Required
+                </h3>
+                <p className="text-sm text-gray-700 mb-3">
+                  Reverse mode requires a Gemini API key to grade your definitions. Click "Set API Key" above to get started.
+                </p>
+                <button
+                  onClick={() => {
+                    setTempApiKey('');
+                    setShowApiKeyModal(true);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  Set API Key
+                </button>
+              </div>
+            ) : !currentWord ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600">Loading word...</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
             {/* Word Display */}
             <div className="text-center bg-gradient-to-r from-blue-50 to-indigo-50 p-8 rounded-xl border border-blue-100">
               <div className="inline-block bg-white px-6 py-3 rounded-lg shadow-sm border border-blue-200 mb-4">
@@ -798,6 +839,78 @@ User's definition: ${userDef}`
                 </button>
               </div>
             )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* API Key Modal */}
+        {showApiKeyModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  {geminiApiKey ? 'Update API Key' : 'Set API Key'}
+                </h3>
+                <button
+                  onClick={() => setShowApiKeyModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Gemini API Key:
+                  </label>
+                  <input
+                    type="password"
+                    value={tempApiKey}
+                    onChange={(e) => setTempApiKey(e.target.value)}
+                    placeholder="Enter your Gemini API key"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-sm text-blue-800 mb-2">
+                    <strong>Get your free API key:</strong>
+                  </p>
+                  <a 
+                    href="https://ai.google.dev/" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-blue-600 hover:underline text-sm"
+                  >
+                    https://ai.google.dev/
+                  </a>
+                  <p className="text-xs text-blue-600 mt-2">
+                    Your API key is stored locally and never shared.
+                  </p>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowApiKeyModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setGeminiApiKey(tempApiKey);
+                      setShowApiKeyModal(false);
+                    }}
+                    disabled={!tempApiKey.trim()}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {geminiApiKey ? 'Update' : 'Set'} Key
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         </div>
