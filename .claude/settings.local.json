@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npm run build:*)",
+      "Bash(timeout 10s npm run dev)",
+      "Bash(true)"
+    ],
+    "deny": []
+  }
+}
