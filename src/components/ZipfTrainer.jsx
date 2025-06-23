@@ -198,6 +198,24 @@ const ZipfTrainer = () => {
     }
   }, [wordData, getWordsInZipfRange, fetchWordDefinition, trainingMode, selectNewWordReverse]);
 
+  // Function to filter out invalid words
+  const filterValidWords = (words) => {
+    const validWords = {};
+    for (const [word, data] of Object.entries(words)) {
+      // Check if word is valid:
+      // - At least 2 characters long
+      // - Only contains letters, apostrophes, hyphens, and spaces (valid word characters)
+      // - No numbers or other special characters
+      if (
+        word.length >= 2 &&
+        /^[a-zA-Z'\- ]+$/.test(word)
+      ) {
+        validWords[word] = data;
+      }
+    }
+    return validWords;
+  };
+
   // Load word frequency data
   useEffect(() => {
     // Try production path first, fallback to dev path
@@ -212,7 +230,8 @@ const ZipfTrainer = () => {
         return response.json();
       })
       .then((data) => {
-        setWordData(data.words);
+        const cleanedWords = filterValidWords(data.words);
+        setWordData(cleanedWords);
         setLoading(false);
       })
       .catch(() => {
@@ -220,7 +239,8 @@ const ZipfTrainer = () => {
         fetch(devPath)
           .then((response) => response.json())
           .then((data) => {
-            setWordData(data.words);
+            const cleanedWords = filterValidWords(data.words);
+            setWordData(cleanedWords);
             setLoading(false);
           })
           .catch((error) => {
