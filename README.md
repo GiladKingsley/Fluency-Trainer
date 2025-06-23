@@ -25,17 +25,22 @@ This personalized approach keeps you engaged and promotes continuous improvement
 
 ## Features
 
+### Normal Mode (Definition → Word)
 *   **Definition-Based Retrieval:** Practice recalling words based on their definitions.
 *   **Adaptive Difficulty:** Automatically adjusts word rarity based on your performance.
-*   **Synonym Option:** Choose to include synonyms for a broader vocabulary challenge.
-*   **Data-Driven:** Uses a comprehensive dictionary and word frequency data for accurate and relevant word selection.
+*   **Parts of Speech Filtering:** Choose which word types to practice (noun, verb, adjective, adverb).
+*   **Synonym & Example Options:** Toggle display of synonyms and usage examples.
 
-## Tech Stack
+### Reverse Mode (Word → Definition)
+*   **AI-Powered Grading:** Uses Google's Gemini AI to evaluate your definitions with a 1-5 scoring system.
+*   **Intelligent Assessment:** Grades based on accuracy, completeness, and understanding of core concepts.
+*   **Adaptive Learning:** Difficulty automatically adjusts based on your performance - get words right and face harder vocabulary.
+*   **Detailed Feedback:** Compare your definition with the correct one to improve your understanding.
 
-*   **React:** A JavaScript library for building user interfaces.
-*   **Vite:** A fast build tool and development server.
-*   **Tailwind CSS:** A utility-first CSS framework for rapid styling.
-*   **Dictionary API:** Used to fetch definitions, synonyms, and other word data.
+### General Features
+*   **Data-Driven:** Uses comprehensive word frequency data for accurate difficulty scaling.
+*   **Persistent Settings:** Your preferences and progress are saved locally.
+*   **Clean Interface:** Modern, distraction-free design focused on learning.
 
 ## Getting Started
 
