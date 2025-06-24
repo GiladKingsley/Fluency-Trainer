@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { resolveDispute, prepareDisputeContext } from '../utils/disputeHandler';
 //please work lol
 const ZIPF_ADJUSTMENT = 0.05;
 const ZIPF_RANGE = 0.1;
@@ -117,6 +118,11 @@ const ZipfTrainer = ({ isDarkMode, setIsDarkMode }) => {
   
   // Welcome modal state
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
+  // Dispute functionality state
+  const [disputeInProgress, setDisputeInProgress] = useState(false);
+  const [disputeResolved, setDisputeResolved] = useState(false);
+  const [disputeResult, setDisputeResult] = useState(null); // { accepted: boolean, explanation: string }
 
   const normalModeInputRef = useRef(null);
   const reverseModeInputRef = useRef(null);
@@ -762,6 +768,11 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
   const selectNewWord = useCallback(async () => {
     if (!wordData) return;
 
+    // Reset dispute state for new word
+    setDisputeInProgress(false);
+    setDisputeResolved(false);
+    setDisputeResult(null);
+
     if (trainingMode === 'reverse') {
       selectNewWordReverse();
     } else if (trainingMode === 'definition') {
@@ -1135,6 +1146,49 @@ User's definition: ${userDef}`
     // Don't adjust difficulty here - wait for user to click "Next Word"
   }, [userGuess, currentWord, isAnswerCorrect]);
 
+  // Handle dispute resolution
+  const handleDispute = useCallback(async () => {
+    if (!geminiApiKey) {
+      setShowApiKeyModal(true);
+      return;
+    }
+
+    setDisputeInProgress(true);
+    try {
+      const context = prepareDisputeContext(trainingMode, {
+        currentWord,
+        clozeTest,
+        userAnswer,
+        wordDefinition,
+        userGuess,
+        userComboAnswer,
+        comboContent,
+        helpContent
+      });
+
+      const disputeResponse = await resolveDispute(geminiApiKey, trainingMode, context);
+      
+      setDisputeResult(disputeResponse);
+      setDisputeResolved(true);
+      
+      if (disputeResponse.accepted) {
+        // Override the score to success
+        if (trainingMode === 'normal') {
+          setNormalScore(1);
+        } else if (trainingMode === 'definition') {
+          setDefinitionScore(1);
+        } else if (trainingMode === 'combo') {
+          setComboScore(1);
+        }
+      }
+    } catch (error) {
+      console.error('Dispute resolution failed:', error);
+      // Could show an error message to user here
+    } finally {
+      setDisputeInProgress(false);
+    }
+  }, [trainingMode, geminiApiKey, currentWord, clozeTest, userAnswer, wordDefinition, userGuess, userComboAnswer, comboContent, helpContent]);
+
   // Auto-focus input when a new question is ready
   useEffect(() => {
     if (trainingMode === 'normal' && clozeTest && normalModeInputRef.current) {
@@ -1496,12 +1550,51 @@ User's definition: ${userDef}`
                       </div>
                     </div>
                     
-                    <button
-                      onClick={handleNextWordNormal}
-                      className="w-full px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-500 dark:to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-700 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
-                    >
-                      Next Word
-                    </button>
+                    {disputeResult && (
+                      <div className={`p-4 rounded-xl border-2 ${
+                        disputeResult.accepted 
+                          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800' 
+                          : 'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-950/30 dark:to-slate-950/30 border-gray-200 dark:border-gray-800'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            disputeResult.accepted ? 'bg-blue-500' : 'bg-gray-500'
+                          }`}></div>
+                          <h5 className="font-medium text-gray-800 dark:text-gray-200">
+                            Dispute {disputeResult.accepted ? 'Accepted' : 'Rejected'}
+                          </h5>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {disputeResult.explanation}
+                        </p>
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-3">
+                      {normalScore === 0 && !disputeResolved && (
+                        <button
+                          onClick={handleDispute}
+                          disabled={disputeInProgress}
+                          className="px-4 py-3 bg-orange-500 dark:bg-orange-600 text-white rounded-xl hover:bg-orange-600 dark:hover:bg-orange-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
+                          title="Dispute this result - AI will re-evaluate your answer"
+                        >
+                          {disputeInProgress ? (
+                            <div className="flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                              Reviewing...
+                            </div>
+                          ) : (
+                            'Dispute'
+                          )}
+                        </button>
+                      )}
+                      <button
+                        onClick={handleNextWordNormal}
+                        className="flex-1 px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-500 dark:to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-700 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                      >
+                        Next Word
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1807,12 +1900,51 @@ User's definition: ${userDef}`
                       </div>
                     </div>
                     
-                    <button
-                      onClick={handleNextWordDefinition}
-                      className="w-full px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-500 dark:to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-700 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
-                    >
-                      Next Word
-                    </button>
+                    {disputeResult && (
+                      <div className={`p-4 rounded-xl border-2 ${
+                        disputeResult.accepted 
+                          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800' 
+                          : 'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-950/30 dark:to-slate-950/30 border-gray-200 dark:border-gray-800'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            disputeResult.accepted ? 'bg-blue-500' : 'bg-gray-500'
+                          }`}></div>
+                          <h5 className="font-medium text-gray-800 dark:text-gray-200">
+                            Dispute {disputeResult.accepted ? 'Accepted' : 'Rejected'}
+                          </h5>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {disputeResult.explanation}
+                        </p>
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-3">
+                      {definitionScore === 0 && !disputeResolved && (
+                        <button
+                          onClick={handleDispute}
+                          disabled={disputeInProgress}
+                          className="px-4 py-3 bg-orange-500 dark:bg-orange-600 text-white rounded-xl hover:bg-orange-600 dark:hover:bg-orange-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
+                          title="Dispute this result - AI will re-evaluate your answer"
+                        >
+                          {disputeInProgress ? (
+                            <div className="flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                              Reviewing...
+                            </div>
+                          ) : (
+                            'Dispute'
+                          )}
+                        </button>
+                      )}
+                      <button
+                        onClick={handleNextWordDefinition}
+                        className="flex-1 px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-500 dark:to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-700 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                      >
+                        Next Word
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1946,12 +2078,51 @@ User's definition: ${userDef}`
                       </div>
                     </div>
                     
-                    <button
-                      onClick={handleNextWordCombo}
-                      className="w-full px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-500 dark:to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-700 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
-                    >
-                      Next Word
-                    </button>
+                    {disputeResult && (
+                      <div className={`p-4 rounded-xl border-2 ${
+                        disputeResult.accepted 
+                          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800' 
+                          : 'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-950/30 dark:to-slate-950/30 border-gray-200 dark:border-gray-800'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            disputeResult.accepted ? 'bg-blue-500' : 'bg-gray-500'
+                          }`}></div>
+                          <h5 className="font-medium text-gray-800 dark:text-gray-200">
+                            Dispute {disputeResult.accepted ? 'Accepted' : 'Rejected'}
+                          </h5>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {disputeResult.explanation}
+                        </p>
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-3">
+                      {comboScore === 0 && !disputeResolved && (
+                        <button
+                          onClick={handleDispute}
+                          disabled={disputeInProgress}
+                          className="px-4 py-3 bg-orange-500 dark:bg-orange-600 text-white rounded-xl hover:bg-orange-600 dark:hover:bg-orange-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
+                          title="Dispute this result - AI will re-evaluate your answer"
+                        >
+                          {disputeInProgress ? (
+                            <div className="flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                              Reviewing...
+                            </div>
+                          ) : (
+                            'Dispute'
+                          )}
+                        </button>
+                      )}
+                      <button
+                        onClick={handleNextWordCombo}
+                        className="flex-1 px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-500 dark:to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-700 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                      >
+                        Next Word
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
