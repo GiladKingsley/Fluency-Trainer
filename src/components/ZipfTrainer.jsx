@@ -141,11 +141,11 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
 **1. Valid Word Handling:**
 - For any valid English word, you must create exactly TWO separate sentences, each showing the target word in a different context.
 - Each sentence must be enclosed in its own \`<sentence1>\` and \`<sentence2>\` tags.
-- In each sentence, the target word must be replaced by three underscores (\`___\`).
+- In each sentence, include the target word naturally in its proper location.
 - The two sentences should demonstrate different meanings, uses, or contexts of the same word.
 - **Example:** For the word "bank", a valid output would be:
-\`<sentence1>After receiving her paycheck, Sarah walked to the ___ to deposit the money into her savings account.</sentence1>
-<sentence2>The children enjoyed their picnic on the grassy ___ of the river while watching the ducks swim by.</sentence2>\`
+\`<sentence1>After receiving her paycheck, Sarah walked to the bank to deposit the money into her savings account.</sentence1>
+<sentence2>The children enjoyed their picnic on the grassy bank of the river while watching the ducks swim by.</sentence2>\`
 
 **2. Invalid Word Handling:**
 - If the input is not a real English word, your entire output must be the exact text \`NOT_A_WORD\`.
@@ -162,7 +162,7 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
 **3. Sentence Quality Requirements:**
 - **Two distinct contexts:** Each sentence should show the word in a meaningfully different context or usage.
 - **Unambiguous:** Each sentence's context must strongly point to the target word, leaving no room for synonyms or other plausible words.
-- **Exact Match:** Each blank (\`___\`) must be fillable *only* by the exact form of the word provided.
+- **Exact Match:** The target word should appear exactly as provided in the original word.
 - **Longer and descriptive:** Each sentence should be substantial (10+ words) and include descriptive details that make the context very clear.
 - **Independent:** Each sentence should be completely independent and understandable on its own.
 - **No Synonyms:** Do not use synonyms of the target word within either sentence.
@@ -190,9 +190,16 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
       const sentence2Match = text.match(/<sentence2>(.*?)<\/sentence2>/s);
       
       if (sentence1Match && sentence2Match) {
+        // Replace the target word with underscores in both sentences
+        const createClozeVersion = (sentence, targetWord) => {
+          // Create regex to match the word with word boundaries, case insensitive
+          const regex = new RegExp(`\\b${targetWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+          return sentence.replace(regex, '___');
+        };
+        
         return {
-          sentence1: sentence1Match[1].trim(),
-          sentence2: sentence2Match[1].trim()
+          sentence1: createClozeVersion(sentence1Match[1].trim(), word),
+          sentence2: createClozeVersion(sentence2Match[1].trim(), word)
         };
       }
       
