@@ -1400,29 +1400,15 @@ User's definition: ${userDef}`
 
                 {/* Answer Input */}
                 <div className="space-y-4">
-                  <div className="relative">
-                    <input
-                      ref={normalModeInputRef}
-                      type="text"
-                      value={userAnswer}
-                      onChange={(e) => setUserAnswer(e.target.value)}
-                      placeholder="Type your answer here..."
-                      className="w-full px-4 py-3 pr-12 border-2 border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-zinc-500"
-                      disabled={showAnswer}
-                    />
-                    {!showAnswer && !helpUsed && (
-                      <button
-                        onClick={handleHelp}
-                        disabled={generatingHelp}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 dark:text-zinc-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
-                        title="Get definition help"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
+                  <input
+                    ref={normalModeInputRef}
+                    type="text"
+                    value={userAnswer}
+                    onChange={(e) => setUserAnswer(e.target.value)}
+                    placeholder="Type your answer here..."
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-zinc-500"
+                    disabled={showAnswer}
+                  />
                   
                   {/* Help Content Display */}
                   {helpContent && trainingMode === 'normal' && (
@@ -1730,29 +1716,15 @@ User's definition: ${userDef}`
 
                 {/* Answer Input */}
                 <div className="space-y-4">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      ref={definitionModeInputRef}
-                      value={userGuess}
-                      onChange={(e) => setUserGuess(e.target.value)}
-                      placeholder="Type your guess here..."
-                      className="w-full px-4 py-3 pr-12 border-2 border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-zinc-500"
-                      disabled={showAnswer}
-                    />
-                    {!showAnswer && !helpUsed && (
-                      <button
-                        onClick={handleHelp}
-                        disabled={generatingHelp}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 dark:text-zinc-500 hover:text-purple-500 dark:hover:text-purple-400 transition-colors disabled:opacity-50"
-                        title="Get example sentence help"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
+                  <input
+                    type="text"
+                    ref={definitionModeInputRef}
+                    value={userGuess}
+                    onChange={(e) => setUserGuess(e.target.value)}
+                    placeholder="Type your guess here..."
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-zinc-500"
+                    disabled={showAnswer}
+                  />
                   
                   {/* Help Content Display */}
                   {helpContent && trainingMode === 'definition' && (
