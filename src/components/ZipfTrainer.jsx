@@ -391,10 +391,12 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
 1. First provide a concise, accurate definition of the word in <definition> tags
 2. Then grade the user's definition from 1 to 5 in <grade> tags
 
+If a word has multiple definitions, and the user defined one that wasn't in your mind or you weren't planning on asking about, grade them for the meaning they were trying to define instead of the other one you wanted to grade them on.
+
 **Grading Rubric:**
 *   **1: Irrelevant.** The definition is completely wrong or unrelated.
-*   **2: Vaguely Related.** Touches upon a related concept but misses the core meaning. Uses the root of the word in the definition.
-*   **3: Core Idea.** The main concept is correct, but the definition is imperfect. A smart individual would understand the description matches the word.
+*   **2: Not There** Touches upon a related concept but misses the core meaning AND/OR uses the root of the word or the word itself in the definition.
+*   **3: Alright** The main concept is correct, but the definition is imperfect. A smart individual would understand the description matches the word.
 *   **4: Accurate.** A solid, correct definition that shows good understanding.
 *   **5: Precise & Nuanced.** A comprehensive, almost dictionary-quality definition.
 
