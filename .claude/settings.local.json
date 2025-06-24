@@ -5,7 +5,9 @@
       "Bash(npm run build:*)",
       "Bash(timeout 10s npm run dev)",
       "Bash(true)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(timeout 10 npm run dev)",
+      "Bash(node:*)"
     ],
     "deny": []
   }

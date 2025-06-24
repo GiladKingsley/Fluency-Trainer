@@ -36,6 +36,7 @@ const getInitialState = () => {
   const savedReverseZipfLevel = localStorage.getItem('reverseZipfLevel');
   const savedNormalZipfLevel = localStorage.getItem('normalZipfLevel');
   const savedDefinitionZipfLevel = localStorage.getItem('definitionZipfLevel');
+  const savedRecentWords = localStorage.getItem('recentWords');
 
   return {
     zipfLevels: savedZipfLevels
@@ -48,6 +49,7 @@ const getInitialState = () => {
     reverseZipfLevel: savedReverseZipfLevel ? parseFloat(savedReverseZipfLevel) : 5.0,
     normalZipfLevel: savedNormalZipfLevel ? parseFloat(savedNormalZipfLevel) : 5.0,
     definitionZipfLevel: savedDefinitionZipfLevel ? parseFloat(savedDefinitionZipfLevel) : 5.0,
+    recentWords: savedRecentWords ? JSON.parse(savedRecentWords) : [],
   };
 };
 
@@ -66,10 +68,12 @@ const ZipfTrainer = ({ isDarkMode, setIsDarkMode }) => {
     reverseZipfLevel: initialReverseZipfLevel,
     normalZipfLevel: initialNormalZipfLevel,
     definitionZipfLevel: initialDefinitionZipfLevel,
+    recentWords: initialRecentWords,
   } = getInitialState();
   const [zipfLevels, setZipfLevels] = useState(initialZipfLevels);
   const [trainingMode, setTrainingMode] = useState(initialMode);
   const [geminiApiKey, setGeminiApiKey] = useState(initialGeminiKey);
+  const [recentWords, setRecentWords] = useState(initialRecentWords);
   
   // Normal mode state (cloze test)
   const [clozeTest, setClozeTest] = useState('');
@@ -136,6 +140,46 @@ const ZipfTrainer = ({ isDarkMode, setIsDarkMode }) => {
       )
       .map(([word]) => word);
   }, [wordData]);
+
+  // Weighted random selection that heavily avoids recent words
+  const selectWordWithWeighting = useCallback((wordsInRange) => {
+    if (!wordsInRange || wordsInRange.length === 0) return null;
+    
+    // If we have very few words, fall back to pure random to avoid endless repetition
+    if (wordsInRange.length <= 5) {
+      return wordsInRange[Math.floor(Math.random() * wordsInRange.length)];
+    }
+    
+    // Create weighted array: recent words get weight 1, others get weight 20
+    const weights = wordsInRange.map(word => 
+      recentWords.includes(word) ? 1 : 20
+    );
+    
+    // Calculate total weight
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    
+    // Select random point in weight distribution
+    let random = Math.random() * totalWeight;
+    
+    // Find the word at this weight point
+    for (let i = 0; i < wordsInRange.length; i++) {
+      random -= weights[i];
+      if (random <= 0) {
+        return wordsInRange[i];
+      }
+    }
+    
+    // Fallback (shouldn't happen)
+    return wordsInRange[wordsInRange.length - 1];
+  }, [recentWords]);
+
+  // Add word to recent words tracking (maintain max 35 recent words)
+  const addToRecentWords = useCallback((word) => {
+    setRecentWords(prev => {
+      const updated = [word, ...prev.filter(w => w !== word)];
+      return updated.slice(0, 35); // Keep only the 35 most recent
+    });
+  }, []);
 
   const generateClozeTest = useCallback(async (word) => {
     if (!geminiApiKey) {
@@ -344,16 +388,21 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     const maxAttempts = 10;
 
     while (attempts < maxAttempts) {
-      const randomWord = wordsInRange[Math.floor(Math.random() * wordsInRange.length)];
+      const selectedWord = selectWordWithWeighting(wordsInRange);
+      if (!selectedWord) {
+        console.error('Failed to select word');
+        return;
+      }
       
       try {
-        const clozeResult = await generateClozeTest(randomWord);
+        const clozeResult = await generateClozeTest(selectedWord);
         if (clozeResult === 'NOT_A_WORD') {
           attempts++;
           continue; // Try another word
         }
         
-        setCurrentWord(randomWord);
+        setCurrentWord(selectedWord);
+        addToRecentWords(selectedWord);
         setClozeTest(clozeResult);
         setUserAnswer('');
         setNormalScore(null);
@@ -367,7 +416,7 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
         }
       }
     }
-  }, [wordData, normalZipfLevel, generateClozeTest, getWordsInZipfRange]);
+  }, [wordData, normalZipfLevel, generateClozeTest, getWordsInZipfRange, selectWordWithWeighting, addToRecentWords]);
 
   const selectNewWordReverse = useCallback(() => {
     if (!wordData) return;
@@ -378,15 +427,19 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
       return;
     }
 
-    const randomWord =
-      wordsInRange[Math.floor(Math.random() * wordsInRange.length)];
+    const selectedWord = selectWordWithWeighting(wordsInRange);
+    if (!selectedWord) {
+      console.error('Failed to select word');
+      return;
+    }
     
-    setCurrentWord(randomWord);
+    setCurrentWord(selectedWord);
+    addToRecentWords(selectedWord);
     setUserDefinition('');
     setScore(null);
     setCorrectDefinition('');
     setShowAnswer(false);
-  }, [wordData, reverseZipfLevel, getWordsInZipfRange]);
+  }, [wordData, reverseZipfLevel, getWordsInZipfRange, selectWordWithWeighting, addToRecentWords]);
 
   const selectNewWordDefinition = useCallback(async () => {
     if (!wordData) return;
@@ -401,16 +454,21 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     const maxAttempts = 10;
 
     while (attempts < maxAttempts) {
-      const randomWord = wordsInRange[Math.floor(Math.random() * wordsInRange.length)];
+      const selectedWord = selectWordWithWeighting(wordsInRange);
+      if (!selectedWord) {
+        console.error('Failed to select word');
+        return;
+      }
       
       try {
-        const definitionResult = await generateDefinition(randomWord);
+        const definitionResult = await generateDefinition(selectedWord);
         if (definitionResult === 'NOT_A_WORD') {
           attempts++;
           continue; // Try another word
         }
         
-        setCurrentWord(randomWord);
+        setCurrentWord(selectedWord);
+        addToRecentWords(selectedWord);
         setWordDefinition(definitionResult);
         setUserGuess('');
         setDefinitionScore(null);
@@ -424,7 +482,7 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
         }
       }
     }
-  }, [wordData, definitionZipfLevel, generateDefinition, getWordsInZipfRange]);
+  }, [wordData, definitionZipfLevel, generateDefinition, getWordsInZipfRange, selectWordWithWeighting, addToRecentWords]);
 
   const selectNewWord = useCallback(async () => {
     if (!wordData) return;
@@ -568,6 +626,10 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
   useEffect(() => {
     localStorage.setItem('definitionZipfLevel', definitionZipfLevel.toString());
   }, [definitionZipfLevel]);
+
+  useEffect(() => {
+    localStorage.setItem('recentWords', JSON.stringify(recentWords));
+  }, [recentWords]);
 
   // Select new word when relevant state changes
   useEffect(() => {
