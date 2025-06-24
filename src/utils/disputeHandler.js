@@ -74,7 +74,7 @@ Consider whether "${context.userAnswer}" should be accepted as a valid alternati
 };
 
 /**
- * Calls Gemini API to resolve disputes
+ * Calls Gemini API to resolve disputes with retry logic
  */
 export const resolveDispute = async (apiKey, mode, context) => {
   if (!apiKey) {
@@ -82,33 +82,45 @@ export const resolveDispute = async (apiKey, mode, context) => {
   }
 
   const prompt = getDisputePrompt(mode, context);
+  let attempts = 0;
+  const maxAttempts = 3;
 
-  try {
-    const requestBody = {
-      contents: [{
-        parts: [{
-          text: prompt
+  while (attempts < maxAttempts) {
+    try {
+      const requestBody = {
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
         }]
-      }]
-    };
+      };
 
-    const response = await callGeminiWithFallback(apiKey, 'gemini-2.5-flash', requestBody);
-    const result = response.text;
+      const response = await callGeminiWithFallback(apiKey, 'gemini-2.5-flash', requestBody);
+      const result = response.text;
 
-    // Parse the response format: DECISION: [ACCEPT/REJECT]\nEXPLANATION: [explanation]
-    const decisionMatch = result.match(/DECISION:\s*(ACCEPT|REJECT)/i);
-    const explanationMatch = result.match(/EXPLANATION:\s*(.+)/i);
+      // Parse the response format: DECISION: [ACCEPT/REJECT]\nEXPLANATION: [explanation]
+      const decisionMatch = result.match(/DECISION:\s*(ACCEPT|REJECT)/i);
+      const explanationMatch = result.match(/EXPLANATION:\s*(.+)/i);
 
-    const decision = decisionMatch ? decisionMatch[1].toUpperCase() === 'ACCEPT' : false;
-    const explanation = explanationMatch ? explanationMatch[1].trim() : 'No explanation provided.';
+      const decision = decisionMatch ? decisionMatch[1].toUpperCase() === 'ACCEPT' : false;
+      const explanation = explanationMatch ? explanationMatch[1].trim() : 'No explanation provided.';
 
-    return {
-      accepted: decision,
-      explanation: explanation
-    };
-  } catch (error) {
-    console.error('Dispute resolution failed:', error);
-    throw error;
+      return {
+        accepted: decision,
+        explanation: explanation
+      };
+    } catch (error) {
+      attempts++;
+      console.error(`Dispute resolution attempt ${attempts} failed:`, error);
+      
+      if (attempts === maxAttempts) {
+        console.error('Dispute resolution failed after', maxAttempts, 'attempts');
+        throw error;
+      }
+      
+      // Add a small delay between retries (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+    }
   }
 };
 

@@ -124,6 +124,7 @@ const ZipfTrainer = ({ isDarkMode, setIsDarkMode }) => {
   const [disputeInProgress, setDisputeInProgress] = useState(false);
   const [disputeResolved, setDisputeResolved] = useState(false);
   const [disputeResult, setDisputeResult] = useState(null); // { accepted: boolean, explanation: string }
+  const [disputeError, setDisputeError] = useState(null);
 
   const normalModeInputRef = useRef(null);
   const reverseModeInputRef = useRef(null);
@@ -721,6 +722,7 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     setDisputeInProgress(false);
     setDisputeResolved(false);
     setDisputeResult(null);
+    setDisputeError(null);
 
     if (trainingMode === 'reverse') {
       selectNewWordReverse();
@@ -1090,6 +1092,8 @@ User's definition: ${userDef}`
     }
 
     setDisputeInProgress(true);
+    setDisputeError(null); // Clear any previous errors
+    
     try {
       const context = prepareDisputeContext(trainingMode, {
         currentWord,
@@ -1119,7 +1123,20 @@ User's definition: ${userDef}`
       }
     } catch (error) {
       console.error('Dispute resolution failed:', error);
-      // Could show an error message to user here
+      
+      // Set user-friendly error message
+      let errorMessage = 'Failed to resolve dispute. ';
+      if (error.message.includes('API key')) {
+        errorMessage += 'Please check your API key.';
+      } else if (error.message.includes('rate limit') || error.message.includes('quota')) {
+        errorMessage += 'API limit reached. Please try again later.';
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        errorMessage += 'Network error. Please check your connection and try again.';
+      } else {
+        errorMessage += 'Please try again.';
+      }
+      
+      setDisputeError(errorMessage);
     } finally {
       setDisputeInProgress(false);
     }
@@ -1506,6 +1523,27 @@ User's definition: ${userDef}`
                       </div>
                     )}
                     
+                    {disputeError && (
+                      <div className="p-4 rounded-xl border-2 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30 border-red-200 dark:border-red-800 mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                          <h5 className="font-medium text-gray-800 dark:text-gray-200">
+                            Dispute Failed
+                          </h5>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                          {disputeError}
+                        </p>
+                        <button
+                          onClick={handleDispute}
+                          disabled={disputeInProgress}
+                          className="px-3 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed text-sm font-medium transition-all duration-200"
+                        >
+                          {disputeInProgress ? 'Retrying...' : 'Try Again'}
+                        </button>
+                      </div>
+                    )}
+                    
                     <div className="flex gap-3">
                       {normalScore === 0 && !disputeResolved && (
                         <button
@@ -1856,6 +1894,27 @@ User's definition: ${userDef}`
                       </div>
                     )}
                     
+                    {disputeError && (
+                      <div className="p-4 rounded-xl border-2 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30 border-red-200 dark:border-red-800 mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                          <h5 className="font-medium text-gray-800 dark:text-gray-200">
+                            Dispute Failed
+                          </h5>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                          {disputeError}
+                        </p>
+                        <button
+                          onClick={handleDispute}
+                          disabled={disputeInProgress}
+                          className="px-3 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed text-sm font-medium transition-all duration-200"
+                        >
+                          {disputeInProgress ? 'Retrying...' : 'Try Again'}
+                        </button>
+                      </div>
+                    )}
+                    
                     <div className="flex gap-3">
                       {definitionScore === 0 && !disputeResolved && (
                         <button
@@ -2031,6 +2090,27 @@ User's definition: ${userDef}`
                         <p className="text-sm text-gray-700 dark:text-gray-300">
                           {disputeResult.explanation}
                         </p>
+                      </div>
+                    )}
+                    
+                    {disputeError && (
+                      <div className="p-4 rounded-xl border-2 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30 border-red-200 dark:border-red-800 mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                          <h5 className="font-medium text-gray-800 dark:text-gray-200">
+                            Dispute Failed
+                          </h5>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                          {disputeError}
+                        </p>
+                        <button
+                          onClick={handleDispute}
+                          disabled={disputeInProgress}
+                          className="px-3 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed text-sm font-medium transition-all duration-200"
+                        >
+                          {disputeInProgress ? 'Retrying...' : 'Try Again'}
+                        </button>
                       </div>
                     )}
                     
