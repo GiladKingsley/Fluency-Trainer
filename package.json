@@ -5,15 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build --mode production",
     "build-dev": "vite build",
     "build-uat": "vite build --mode uat",
     "build-prod": "vite build --mode production",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "predeploy": "npm run build-prod",
-    "deploy": "gh-pages -d dist",
-    "gh-pages": "vite build --mode production --base=/Fluency-Trainer/ && gh-pages -d docs && powershell -Command \"Copy-Item docs/index.html docs/404.html\""
+    "deploy": "gh-pages -d docs",
+    "gh-pages": "vite build --mode production && gh-pages -d docs && powershell -Command \"Copy-Item docs/index.html docs/404.html\""
   },
   "dependencies": {
     "react": "^18.2.0",
