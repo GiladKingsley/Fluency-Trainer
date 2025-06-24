@@ -36,6 +36,7 @@ const getInitialState = () => {
   const savedReverseZipfLevel = localStorage.getItem('reverseZipfLevel');
   const savedNormalZipfLevel = localStorage.getItem('normalZipfLevel');
   const savedDefinitionZipfLevel = localStorage.getItem('definitionZipfLevel');
+  const savedComboZipfLevel = localStorage.getItem('comboZipfLevel');
   const savedRecentWords = localStorage.getItem('recentWords');
 
   return {
@@ -49,6 +50,7 @@ const getInitialState = () => {
     reverseZipfLevel: savedReverseZipfLevel ? parseFloat(savedReverseZipfLevel) : 5.0,
     normalZipfLevel: savedNormalZipfLevel ? parseFloat(savedNormalZipfLevel) : 5.0,
     definitionZipfLevel: savedDefinitionZipfLevel ? parseFloat(savedDefinitionZipfLevel) : 5.0,
+    comboZipfLevel: savedComboZipfLevel ? parseFloat(savedComboZipfLevel) : 5.0,
     recentWords: savedRecentWords ? JSON.parse(savedRecentWords) : [],
   };
 };
@@ -68,6 +70,7 @@ const ZipfTrainer = ({ isDarkMode, setIsDarkMode }) => {
     reverseZipfLevel: initialReverseZipfLevel,
     normalZipfLevel: initialNormalZipfLevel,
     definitionZipfLevel: initialDefinitionZipfLevel,
+    comboZipfLevel: initialComboZipfLevel,
     recentWords: initialRecentWords,
   } = getInitialState();
   const [zipfLevels, setZipfLevels] = useState(initialZipfLevels);
@@ -101,6 +104,13 @@ const ZipfTrainer = ({ isDarkMode, setIsDarkMode }) => {
   const [helpContent, setHelpContent] = useState(null);
   const [generatingHelp, setGeneratingHelp] = useState(false);
 
+  // Combo mode state
+  const [comboContent, setComboContent] = useState(null);
+  const [userComboAnswer, setUserComboAnswer] = useState('');
+  const [comboZipfLevel, setComboZipfLevel] = useState(initialComboZipfLevel);
+  const [generatingCombo, setGeneratingCombo] = useState(false);
+  const [comboScore, setComboScore] = useState(null);
+
   // API Key modal state
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
@@ -111,6 +121,7 @@ const ZipfTrainer = ({ isDarkMode, setIsDarkMode }) => {
   const normalModeInputRef = useRef(null);
   const reverseModeInputRef = useRef(null);
   const definitionModeInputRef = useRef(null);
+  const comboModeInputRef = useRef(null);
 
   // Function to check if a word is a name
   const isName = useCallback((word) => {
@@ -493,6 +504,93 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     }
   }, [geminiApiKey]);
 
+  const generateComboContent = useCallback(async (word) => {
+    if (!geminiApiKey) {
+      return null;
+    }
+
+    setGeneratingCombo(true);
+    
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `You are an AI that creates comprehensive word exercises for a fluency training app. Your purpose is to provide both a definition and a contextual sentence for word retrieval practice.
+
+You will be given a word in \`<word>\` tags. Your response must follow these strict rules:
+
+**1. Valid Word Handling:**
+- For any valid English word, you must provide BOTH a definition and a cloze sentence.
+- The definition must be enclosed in \`<definition>\` tags - clear, concise, dictionary-style without using the word itself.
+- The part of speech must be enclosed in \`<pos>\` tags.
+- The cloze sentence must be enclosed in \`<sentence>\` tags with the target word replaced by exactly three underscores (___).
+
+**2. Definition Quality:**
+- Clear and accessible language
+- Avoid circular definitions using the target word
+- Focus on the most commonly understood meaning
+- If multiple meanings exist, choose the most common one
+
+**3. Sentence Quality:**
+- Create ONE example sentence showing the word in natural context
+- The sentence should clearly demonstrate the word's meaning and usage
+- Provide enough context to understand the word's meaning
+- Keep it informative but concise (15-25 words ideal)
+- Replace the target word with exactly three underscores: ___
+- Make the word's usage obvious from context
+
+**4. Consistency:**
+- The definition and sentence should refer to the same meaning/usage of the word
+- Both should work together to help identify the target word
+
+**Example format:**
+\`<definition>A large mammal with a trunk, tusks, and large ears, native to Africa and Asia.</definition>
+<pos>noun</pos>
+<sentence>The ___ used its trunk to pick up peanuts from the zoo visitor's hand.</sentence>\`
+
+<word>${word}</word>`
+              }]
+            }]
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to generate combo content');
+      }
+
+      const data = await response.json();
+      const text = data.candidates[0].content.parts[0].text.trim();
+      
+      // Extract definition, part of speech, and sentence
+      const posMatch = text.match(/<pos>(.*?)<\/pos>/s);
+      const definitionMatch = text.match(/<definition>(.*?)<\/definition>/s);
+      const sentenceMatch = text.match(/<sentence>(.*?)<\/sentence>/s);
+      
+      if (posMatch && definitionMatch && sentenceMatch) {
+        return {
+          partOfSpeech: posMatch[1].trim(),
+          definition: definitionMatch[1].trim(),
+          sentence: sentenceMatch[1].trim()
+        };
+      }
+      
+      throw new Error('Invalid response format');
+    } catch (error) {
+      console.error('Error generating combo content:', error);
+      throw error;
+    } finally {
+      setGeneratingCombo(false);
+    }
+  }, [geminiApiKey]);
+
   const handleHelp = useCallback(async () => {
     if (!currentWord || helpUsed || generatingHelp) return;
     
@@ -620,6 +718,47 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     }
   }, [wordData, definitionZipfLevel, generateDefinition, getWordsInZipfRange, selectWordWithWeighting, addToRecentWords]);
 
+  const selectNewWordCombo = useCallback(async () => {
+    if (!wordData) return;
+
+    const wordsInRange = getWordsInZipfRange(comboZipfLevel);
+    if (wordsInRange.length === 0) {
+      console.error('No words found in range');
+      return;
+    }
+
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (attempts < maxAttempts) {
+      const selectedWord = selectWordWithWeighting(wordsInRange);
+      if (!selectedWord) {
+        console.error('Failed to select word');
+        return;
+      }
+      
+      try {
+        const comboResult = await generateComboContent(selectedWord);
+        
+        setCurrentWord(selectedWord);
+        addToRecentWords(selectedWord);
+        setComboContent(comboResult);
+        setUserComboAnswer('');
+        setComboScore(null);
+        setShowAnswer(false);
+        setHelpUsed(false);
+        setHelpContent(null);
+        return;
+      } catch (error) {
+        attempts++;
+        if (attempts === maxAttempts) {
+          console.error('Failed to generate combo content after', maxAttempts, 'attempts');
+          return;
+        }
+      }
+    }
+  }, [wordData, comboZipfLevel, generateComboContent, getWordsInZipfRange, selectWordWithWeighting, addToRecentWords]);
+
   const selectNewWord = useCallback(async () => {
     if (!wordData) return;
 
@@ -627,10 +766,12 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
       selectNewWordReverse();
     } else if (trainingMode === 'definition') {
       await selectNewWordDefinition();
+    } else if (trainingMode === 'combo') {
+      await selectNewWordCombo();
     } else {
       await selectNewWordNormal();
     }
-  }, [wordData, trainingMode, selectNewWordReverse, selectNewWordDefinition, selectNewWordNormal]);
+  }, [wordData, trainingMode, selectNewWordReverse, selectNewWordDefinition, selectNewWordCombo, selectNewWordNormal]);
 
   // Function to filter out invalid words
   const filterValidWords = useCallback((words) => {
@@ -764,6 +905,10 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
   }, [definitionZipfLevel]);
 
   useEffect(() => {
+    localStorage.setItem('comboZipfLevel', comboZipfLevel.toString());
+  }, [comboZipfLevel]);
+
+  useEffect(() => {
     localStorage.setItem('recentWords', JSON.stringify(recentWords));
   }, [recentWords]);
 
@@ -891,6 +1036,11 @@ User's definition: ${userDef}`
     setUserGuess('');
     setDefinitionScore(null);
     
+    // Reset combo mode state
+    setComboContent(null);
+    setUserComboAnswer('');
+    setComboScore(null);
+    
     // Reset help state
     setHelpUsed(false);
     setHelpContent(null);
@@ -951,6 +1101,31 @@ User's definition: ${userDef}`
     selectNewWord();
   }, [definitionScore, helpUsed, selectNewWord]);
 
+  const handleComboAnswer = useCallback(() => {
+    if (!userComboAnswer.trim()) return;
+    
+    const correct = isAnswerCorrect(userComboAnswer, currentWord);
+    setComboScore(correct ? 1 : 0);
+    setShowAnswer(true);
+    // Don't adjust difficulty here - wait for user to click "Next Word"
+  }, [userComboAnswer, currentWord, isAnswerCorrect]);
+
+  const handleNextWordCombo = useCallback(() => {
+    // Apply difficulty adjustment based on the current score
+    if (comboScore !== null) {
+      if (comboScore === 1) {
+        // Correct - make it harder (lower Zipf)
+        setComboZipfLevel(prev => prev - ZIPF_ADJUSTMENT);
+      } else {
+        // Incorrect - make it easier (higher Zipf)
+        setComboZipfLevel(prev => prev + ZIPF_ADJUSTMENT);
+      }
+    }
+    
+    // Select new word
+    selectNewWord();
+  }, [comboScore, selectNewWord]);
+
   const handleDefinitionAnswer = useCallback(() => {
     if (!userGuess.trim()) return;
     
@@ -989,6 +1164,15 @@ User's definition: ${userDef}`
     }
   }, [trainingMode, wordDefinition]);
 
+  useEffect(() => {
+    if (trainingMode === 'combo' && comboContent && comboModeInputRef.current) {
+      const timer = setTimeout(() => {
+        comboModeInputRef.current.focus();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [trainingMode, comboContent]);
+
   // Global keyboard event listener for Enter key
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -1017,6 +1201,12 @@ User's definition: ${userDef}`
          } else if (activeElement === definitionModeInputRef.current) {
            handleDefinitionAnswer();
          }
+      } else if (trainingMode === 'combo') {
+        if (showAnswer) {
+          handleNextWordCombo();
+        } else if (activeElement === comboModeInputRef.current) {
+          handleComboAnswer();
+        }
       }
     };
 
@@ -1035,6 +1225,8 @@ User's definition: ${userDef}`
     handleNextWordReverse,
     handleNextWordDefinition,
     handleDefinitionAnswer,
+    handleComboAnswer,
+    handleNextWordCombo,
     gradeDefinition,
   ]);
 
@@ -1058,10 +1250,10 @@ User's definition: ${userDef}`
 
         {/* Mode Selection */}
         <div className="mb-6">
-          <div className="flex gap-2 mb-4 p-1 bg-gray-100 dark:bg-zinc-800 rounded-lg">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 p-1 bg-gray-100 dark:bg-zinc-800 rounded-lg">
             <button
               onClick={() => handleModeChange('normal')}
-              className={`flex-1 px-4 py-3 rounded-md font-medium transition-all duration-200 ${trainingMode === 'normal' 
+              className={`px-4 py-3 rounded-md font-medium transition-all duration-200 ${trainingMode === 'normal' 
                 ? 'bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm' 
                 : 'text-gray-600 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200'}`}
             >
@@ -1070,7 +1262,7 @@ User's definition: ${userDef}`
             </button>
             <button
               onClick={() => handleModeChange('reverse')}
-              className={`flex-1 px-4 py-3 rounded-md font-medium transition-all duration-200 ${trainingMode === 'reverse' 
+              className={`px-4 py-3 rounded-md font-medium transition-all duration-200 ${trainingMode === 'reverse' 
                 ? 'bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm' 
                 : 'text-gray-600 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200'}`}
             >
@@ -1079,12 +1271,21 @@ User's definition: ${userDef}`
             </button>
             <button
               onClick={() => handleModeChange('definition')}
-              className={`flex-1 px-4 py-3 rounded-md font-medium transition-all duration-200 ${trainingMode === 'definition' 
+              className={`px-4 py-3 rounded-md font-medium transition-all duration-200 ${trainingMode === 'definition' 
                 ? 'bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm' 
                 : 'text-gray-600 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200'}`}
             >
               Definition Mode
               <div className="text-xs opacity-75">Definition → Word</div>
+            </button>
+            <button
+              onClick={() => handleModeChange('combo')}
+              className={`px-4 py-3 rounded-md font-medium transition-all duration-200 ${trainingMode === 'combo' 
+                ? 'bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm' 
+                : 'text-gray-600 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200'}`}
+            >
+              Combo Mode
+              <div className="text-xs opacity-75">Both → Word</div>
             </button>
           </div>
           
@@ -1100,6 +1301,8 @@ User's definition: ${userDef}`
                   ? reverseZipfLevel.toFixed(2)
                   : trainingMode === 'definition'
                   ? definitionZipfLevel.toFixed(2)
+                  : trainingMode === 'combo'
+                  ? comboZipfLevel.toFixed(2)
                   : normalZipfLevel.toFixed(2)}
               </div>
             </div>
@@ -1634,6 +1837,145 @@ User's definition: ${userDef}`
                     
                     <button
                       onClick={handleNextWordDefinition}
+                      className="w-full px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-500 dark:to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-700 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                    >
+                      Next Word
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-600 dark:text-gray-400">Loading word...</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Combo Mode - Definition + Cloze Sentence Display */}
+        {trainingMode === 'combo' && (
+          <div className="space-y-6">
+            {!geminiApiKey ? (
+              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-2">
+                  API Key Required
+                </h3>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                  Combo mode requires a Gemini API key to generate definitions and context sentences. Click "Set API Key" above to get started.
+                </p>
+                <button
+                  onClick={() => {
+                    setTempApiKey('');
+                    setShowApiKeyModal(true);
+                  }}
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-sm font-medium"
+                >
+                  Set API Key
+                </button>
+              </div>
+            ) : generatingCombo ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 dark:border-blue-400 border-t-transparent mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">Generating combo content...</p>
+              </div>
+            ) : comboContent ? (
+              <div className="space-y-6">
+                {/* Question Prompt */}
+                <div className="text-left">
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                    Can you guess this word from both the definition and context?
+                  </h3>
+                </div>
+
+                {/* Definition Section */}
+                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 p-6 rounded-xl border border-emerald-100 dark:border-emerald-800">
+                  <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-emerald-200 dark:border-emerald-700">
+                    <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Definition:</h4>
+                    {comboContent.partOfSpeech && (
+                      <span className="inline-block bg-emerald-100 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-200 px-3 py-1 rounded-full text-sm font-medium mb-3">
+                        {comboContent.partOfSpeech}
+                      </span>
+                    )}
+                    <p className="text-lg text-gray-800 dark:text-gray-200 leading-relaxed">
+                      {comboContent.definition}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Context Sentence Section */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
+                  <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-blue-200 dark:border-blue-700">
+                    <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Context:</h4>
+                    <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed italic">
+                      "{comboContent.sentence}"
+                    </p>
+                  </div>
+                </div>
+
+                {/* Answer Input */}
+                <div className="space-y-4">
+                  <input
+                    ref={comboModeInputRef}
+                    type="text"
+                    value={userComboAnswer}
+                    onChange={(e) => setUserComboAnswer(e.target.value)}
+                    placeholder="Type your guess here..."
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-zinc-500"
+                    disabled={showAnswer}
+                  />
+                  
+                  {!showAnswer && (
+                    <button
+                      onClick={handleComboAnswer}
+                      disabled={!userComboAnswer.trim()}
+                      className="w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-500 dark:to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 dark:hover:from-emerald-600 dark:hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-400 dark:disabled:from-zinc-600 dark:disabled:to-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
+                    >
+                      Submit Guess
+                    </button>
+                  )}
+                </div>
+
+                {/* Answer Feedback */}
+                {showAnswer && (
+                  <div className="space-y-4">
+                    <div className={`p-4 rounded-xl border-2 ${
+                      comboScore === 1 
+                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800' 
+                        : 'bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30 border-red-200 dark:border-red-800'
+                    }`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                          {comboScore === 1 ? 'Correct!' : 'Incorrect'}
+                        </h4>
+                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                          comboScore === 1 
+                            ? 'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200' 
+                            : 'bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200'
+                        }`}>
+                          {comboScore === 1 ? 'Right' : 'Wrong'}
+                        </span>
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="bg-white dark:bg-zinc-800 p-3 rounded-lg border border-gray-100 dark:border-zinc-700">
+                          <h5 className="font-medium text-gray-800 dark:text-gray-200 mb-1">
+                            Correct Answer
+                          </h5>
+                          <p className="text-gray-700 dark:text-gray-300">{currentWord}</p>
+                        </div>
+                        <div className="bg-white dark:bg-zinc-800 p-3 rounded-lg border border-gray-100 dark:border-zinc-700">
+                          <h5 className="font-medium text-gray-800 dark:text-gray-200 mb-1">
+                            Your Guess
+                          </h5>
+                          <p className={`${
+                            comboScore === 1 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                          }`}>{userComboAnswer}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={handleNextWordCombo}
                       className="w-full px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-500 dark:to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-700 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
                     >
                       Next Word
