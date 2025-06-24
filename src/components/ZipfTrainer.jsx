@@ -96,6 +96,11 @@ const ZipfTrainer = ({ isDarkMode, setIsDarkMode }) => {
   const [generatingDefinition, setGeneratingDefinition] = useState(false);
   const [definitionScore, setDefinitionScore] = useState(null);
 
+  // Help functionality state
+  const [helpUsed, setHelpUsed] = useState(false);
+  const [helpContent, setHelpContent] = useState(null);
+  const [generatingHelp, setGeneratingHelp] = useState(false);
+
   // API Key modal state
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
@@ -385,6 +390,121 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     }
   }, [geminiApiKey]);
 
+  const generateHelpContent = useCallback(async (word, mode) => {
+    if (!geminiApiKey) {
+      return null;
+    }
+
+    setGeneratingHelp(true);
+    
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: mode === 'normal' 
+                  ? `You are an AI that provides helpful definitions for a fluency training app. 
+
+You will be given a word in \`<word>\` tags. Your response must follow these strict rules:
+
+**1. Valid Word Handling:**
+- For any valid English word, provide a clear, concise definition in \`<definition>\` tags.
+- The definition should be dictionary-style, without using the word itself.
+- If the word has multiple meanings, provide the most common or central definition.
+- Include the part of speech in \`<pos>\` tags.
+
+**2. Definition Quality:**
+- Clear and accessible language
+- Avoid circular definitions using the target word
+- Focus on the most commonly understood meaning
+
+<word>${word}</word>`
+                  : `You are an AI that creates example sentences for a fluency training app.
+
+You will be given a word in \`<word>\` tags. Your response must follow these strict rules:
+
+**1. Valid Word Handling:**
+- For any valid English word, create exactly ONE example sentence showing the word in context.
+- The sentence must be enclosed in \`<sentence>\` tags.
+- The sentence should clearly demonstrate the word's meaning and usage.
+- Make the sentence natural and informative.
+
+**2. Sentence Quality:**
+- Use clear, natural language
+- Provide enough context to understand the word's meaning
+- Keep it concise but informative (15-25 words ideal)
+- Make the word's usage obvious from context
+
+<word>${word}</word>`
+              }]
+            }]
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to generate help content');
+      }
+
+      const data = await response.json();
+      const text = data.candidates[0].content.parts[0].text.trim();
+      
+      if (mode === 'normal') {
+        // Extract definition and part of speech
+        const posMatch = text.match(/<pos>(.*?)<\/pos>/s);
+        const definitionMatch = text.match(/<definition>(.*?)<\/definition>/s);
+        
+        if (posMatch && definitionMatch) {
+          return {
+            partOfSpeech: posMatch[1].trim(),
+            definition: definitionMatch[1].trim()
+          };
+        }
+      } else {
+        // Extract sentence
+        const sentenceMatch = text.match(/<sentence>(.*?)<\/sentence>/s);
+        
+        if (sentenceMatch) {
+          // Replace the target word with underscores in the sentence
+          const createClozeVersion = (sentence, targetWord) => {
+            // Create regex to match the word with word boundaries, case insensitive
+            const regex = new RegExp(`\\b${targetWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+            return sentence.replace(regex, '___');
+          };
+          
+          return {
+            sentence: createClozeVersion(sentenceMatch[1].trim(), word)
+          };
+        }
+      }
+      
+      throw new Error('Invalid response format');
+    } catch (error) {
+      console.error('Error generating help content:', error);
+      throw error;
+    } finally {
+      setGeneratingHelp(false);
+    }
+  }, [geminiApiKey]);
+
+  const handleHelp = useCallback(async () => {
+    if (!currentWord || helpUsed || generatingHelp) return;
+    
+    try {
+      const helpResult = await generateHelpContent(currentWord, trainingMode);
+      setHelpContent(helpResult);
+      setHelpUsed(true);
+    } catch (error) {
+      console.error('Error generating help:', error);
+    }
+  }, [currentWord, helpUsed, generatingHelp, generateHelpContent, trainingMode]);
+
   const selectNewWordNormal = useCallback(async () => {
     if (!wordData) return;
 
@@ -417,6 +537,8 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
         setUserAnswer('');
         setNormalScore(null);
         setShowAnswer(false);
+        setHelpUsed(false);
+        setHelpContent(null);
         return;
       } catch (error) {
         attempts++;
@@ -449,6 +571,8 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     setScore(null);
     setCorrectDefinition('');
     setShowAnswer(false);
+    setHelpUsed(false);
+    setHelpContent(null);
   }, [wordData, reverseZipfLevel, getWordsInZipfRange, selectWordWithWeighting, addToRecentWords]);
 
   const selectNewWordDefinition = useCallback(async () => {
@@ -483,6 +607,8 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
         setUserGuess('');
         setDefinitionScore(null);
         setShowAnswer(false);
+        setHelpUsed(false);
+        setHelpContent(null);
         return;
       } catch (error) {
         attempts++;
@@ -764,23 +890,30 @@ User's definition: ${userDef}`
     setWordDefinition('');
     setUserGuess('');
     setDefinitionScore(null);
+    
+    // Reset help state
+    setHelpUsed(false);
+    setHelpContent(null);
   };
 
   const handleNextWordNormal = useCallback(() => {
-    // Apply difficulty adjustment based on the current score
+    // Apply difficulty adjustment based on the current score and help usage
     if (normalScore !== null) {
       if (normalScore === 1) {
-        // Correct - make it harder (lower Zipf)
-        setNormalZipfLevel(prev => prev - ZIPF_ADJUSTMENT);
+        // Correct - only make it harder if help wasn't used
+        if (!helpUsed) {
+          setNormalZipfLevel(prev => prev - ZIPF_ADJUSTMENT);
+        }
+        // If help was used and answer correct, no difficulty change
       } else {
-        // Incorrect - make it easier (higher Zipf)
+        // Incorrect - make it easier (higher Zipf) regardless of help usage
         setNormalZipfLevel(prev => prev + ZIPF_ADJUSTMENT);
       }
     }
     
     // Select new word
     selectNewWord();
-  }, [normalScore, selectNewWord]);
+  }, [normalScore, helpUsed, selectNewWord]);
 
   const handleNextWordReverse = useCallback(() => {
     // Apply difficulty adjustment based on the current score
@@ -800,20 +933,23 @@ User's definition: ${userDef}`
   }, [score, selectNewWord]);
 
   const handleNextWordDefinition = useCallback(() => {
-    // Apply difficulty adjustment based on the current score
+    // Apply difficulty adjustment based on the current score and help usage
     if (definitionScore !== null) {
       if (definitionScore === 1) {
-        // Correct - make it harder (lower Zipf)
-        setDefinitionZipfLevel(prev => prev - ZIPF_ADJUSTMENT);
+        // Correct - only make it harder if help wasn't used
+        if (!helpUsed) {
+          setDefinitionZipfLevel(prev => prev - ZIPF_ADJUSTMENT);
+        }
+        // If help was used and answer correct, no difficulty change
       } else {
-        // Incorrect - make it easier (higher Zipf)
+        // Incorrect - make it easier (higher Zipf) regardless of help usage
         setDefinitionZipfLevel(prev => prev + ZIPF_ADJUSTMENT);
       }
     }
     
     // Select new word
     selectNewWord();
-  }, [definitionScore, selectNewWord]);
+  }, [definitionScore, helpUsed, selectNewWord]);
 
   const handleDefinitionAnswer = useCallback(() => {
     if (!userGuess.trim()) return;
@@ -1061,24 +1197,74 @@ User's definition: ${userDef}`
 
                 {/* Answer Input */}
                 <div className="space-y-4">
-                  <input
-                    ref={normalModeInputRef}
-                    type="text"
-                    value={userAnswer}
-                    onChange={(e) => setUserAnswer(e.target.value)}
-                    placeholder="Type your answer here..."
-                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-zinc-500"
-                    disabled={showAnswer}
-                  />
+                  <div className="relative">
+                    <input
+                      ref={normalModeInputRef}
+                      type="text"
+                      value={userAnswer}
+                      onChange={(e) => setUserAnswer(e.target.value)}
+                      placeholder="Type your answer here..."
+                      className="w-full px-4 py-3 pr-12 border-2 border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-zinc-500"
+                      disabled={showAnswer}
+                    />
+                    {!showAnswer && !helpUsed && (
+                      <button
+                        onClick={handleHelp}
+                        disabled={generatingHelp}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 dark:text-zinc-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
+                        title="Get definition help"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Help Content Display */}
+                  {helpContent && trainingMode === 'normal' && (
+                    <div className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg p-4">
+                      <div className="flex items-center mb-2">
+                        <svg className="w-4 h-4 text-gray-500 dark:text-zinc-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-zinc-300">Help: Definition</h4>
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-zinc-400">
+                        {helpContent.partOfSpeech && (
+                          <span className="inline-block bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300 px-2 py-1 rounded text-xs font-medium mr-2 mb-2">
+                            {helpContent.partOfSpeech}
+                          </span>
+                        )}
+                        <p>{helpContent.definition}</p>
+                      </div>
+                    </div>
+                  )}
                   
                   {!showAnswer && (
-                    <button
-                      onClick={handleNormalAnswer}
-                      disabled={!userAnswer.trim()}
-                      className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-500 dark:to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 dark:hover:from-blue-600 dark:hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-400 dark:disabled:from-zinc-600 dark:disabled:to-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
-                    >
-                      Submit Answer
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleNormalAnswer}
+                        disabled={!userAnswer.trim()}
+                        className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-500 dark:to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 dark:hover:from-blue-600 dark:hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-400 dark:disabled:from-zinc-600 dark:disabled:to-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
+                      >
+                        Submit Answer
+                      </button>
+                      {!helpUsed && (
+                        <button
+                          onClick={handleHelp}
+                          disabled={generatingHelp}
+                          className="px-4 py-3 bg-gray-500 dark:bg-zinc-500 text-white rounded-xl hover:bg-gray-600 dark:hover:bg-zinc-600 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
+                          title="Get definition help"
+                        >
+                          {generatingHelp ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                          ) : (
+                            'Help'
+                          )}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -1341,24 +1527,69 @@ User's definition: ${userDef}`
 
                 {/* Answer Input */}
                 <div className="space-y-4">
-                  <input
-                    type="text"
-                    ref={definitionModeInputRef}
-                    value={userGuess}
-                    onChange={(e) => setUserGuess(e.target.value)}
-                    placeholder="Type your guess here..."
-                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-zinc-500"
-                    disabled={showAnswer}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      ref={definitionModeInputRef}
+                      value={userGuess}
+                      onChange={(e) => setUserGuess(e.target.value)}
+                      placeholder="Type your guess here..."
+                      className="w-full px-4 py-3 pr-12 border-2 border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-zinc-500"
+                      disabled={showAnswer}
+                    />
+                    {!showAnswer && !helpUsed && (
+                      <button
+                        onClick={handleHelp}
+                        disabled={generatingHelp}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 dark:text-zinc-500 hover:text-purple-500 dark:hover:text-purple-400 transition-colors disabled:opacity-50"
+                        title="Get example sentence help"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Help Content Display */}
+                  {helpContent && trainingMode === 'definition' && (
+                    <div className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg p-4">
+                      <div className="flex items-center mb-2">
+                        <svg className="w-4 h-4 text-gray-500 dark:text-zinc-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-zinc-300">Help: Example Sentence</h4>
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-zinc-400">
+                        <p className="italic">"{helpContent.sentence}"</p>
+                      </div>
+                    </div>
+                  )}
                   
                   {!showAnswer && (
-                    <button
-                      onClick={handleDefinitionAnswer}
-                      disabled={!userGuess.trim()}
-                      className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 dark:from-purple-500 dark:to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 dark:hover:from-purple-600 dark:hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 dark:disabled:from-zinc-600 dark:disabled:to-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
-                    >
-                      Submit Guess
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleDefinitionAnswer}
+                        disabled={!userGuess.trim()}
+                        className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 dark:from-purple-500 dark:to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 dark:hover:from-purple-600 dark:hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 dark:disabled:from-zinc-600 dark:disabled:to-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
+                      >
+                        Submit Guess
+                      </button>
+                      {!helpUsed && (
+                        <button
+                          onClick={handleHelp}
+                          disabled={generatingHelp}
+                          className="px-4 py-3 bg-gray-500 dark:bg-zinc-500 text-white rounded-xl hover:bg-gray-600 dark:hover:bg-zinc-600 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
+                          title="Get example sentence help"
+                        >
+                          {generatingHelp ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                          ) : (
+                            'Help'
+                          )}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
 
