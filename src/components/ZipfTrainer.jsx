@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { resolveDispute, prepareDisputeContext } from '../utils/disputeHandler';
+import { callGeminiWithFallback } from '../utils/geminiApi';
 //please work lol
 const ZIPF_ADJUSTMENT = 0.05;
 const ZIPF_RANGE = 0.1;
@@ -211,17 +212,10 @@ const ZipfTrainer = ({ isDarkMode, setIsDarkMode }) => {
     setGeneratingCloze(true);
     
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `You are an AI that creates high-quality cloze-test exercises for a given English word. Your purpose is to help adults train their language fluency by testing the same word in different contexts.
+      const requestBody = {
+        contents: [{
+          parts: [{
+            text: `You are an AI that creates high-quality cloze-test exercises for a given English word. Your purpose is to help adults train their language fluency by testing the same word in different contexts.
 
 You will be given a word in \`<word>\` tags. Your response must follow these strict rules:
 
@@ -262,18 +256,12 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
 - **G. No Markdown formatting** 
 
 <word>${word}</word>`
-              }]
-            }]
-          })
-        }
-      );
+          }]
+        }]
+      };
 
-      if (!response.ok) {
-        throw new Error('Failed to generate cloze test');
-      }
-
-      const data = await response.json();
-      const text = data.candidates[0].content.parts[0].text.trim();
+      const response = await callGeminiWithFallback(geminiApiKey, 'gemini-2.5-flash-lite-preview-06-17', requestBody);
+      const text = response.text;
       
       if (text === 'NOT_A_WORD') {
         return 'NOT_A_WORD';
@@ -314,17 +302,10 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     setGeneratingDefinition(true);
     
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `You are an AI that creates Oxford Dictionary-style definitions for English words. Your purpose is to help adults train their vocabulary by providing clear, precise definitions for word guessing exercises.
+      const requestBody = {
+        contents: [{
+          parts: [{
+            text: `You are an AI that creates Oxford Dictionary-style definitions for English words. Your purpose is to help adults train their vocabulary by providing clear, precise definitions for word guessing exercises.
 
 You will be given a word in \`<word>\` tags. Your response must follow these strict rules:
 
@@ -359,18 +340,12 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
 - **Avoid circular definitions:** Don't use the word itself or obvious derivatives.
 
 <word>${word}</word>`
-              }]
-            }]
-          })
-        }
-      );
+          }]
+        }]
+      };
 
-      if (!response.ok) {
-        throw new Error('Failed to generate definition');
-      }
-
-      const data = await response.json();
-      const text = data.candidates[0].content.parts[0].text.trim();
+      const response = await callGeminiWithFallback(geminiApiKey, 'gemini-2.5-flash-lite-preview-06-17', requestBody);
+      const text = response.text;
       
       if (text === 'NOT_A_WORD') {
         return 'NOT_A_WORD';
@@ -415,18 +390,11 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     setGeneratingHelp(true);
     
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: mode === 'normal' 
-                  ? `You are an AI that provides helpful definitions for a fluency training app. 
+      const requestBody = {
+        contents: [{
+          parts: [{
+            text: mode === 'normal' 
+              ? `You are an AI that provides helpful definitions for a fluency training app. 
 
 You will be given a word in \`<word>\` tags. Your response must follow these strict rules:
 
@@ -442,7 +410,7 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
 - Focus on the most commonly understood meaning
 
 <word>${word}</word>`
-                  : `You are an AI that creates example sentences for a fluency training app.
+              : `You are an AI that creates example sentences for a fluency training app.
 
 You will be given a word in \`<word>\` tags. Your response must follow these strict rules:
 
@@ -459,18 +427,12 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
 - Make the word's usage obvious from context
 
 <word>${word}</word>`
-              }]
-            }]
-          })
-        }
-      );
+          }]
+        }]
+      };
 
-      if (!response.ok) {
-        throw new Error('Failed to generate help content');
-      }
-
-      const data = await response.json();
-      const text = data.candidates[0].content.parts[0].text.trim();
+      const response = await callGeminiWithFallback(geminiApiKey, 'gemini-2.5-flash-lite-preview-06-17', requestBody);
+      const text = response.text;
       
       if (mode === 'normal') {
         // Extract definition and part of speech
@@ -518,17 +480,10 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     setGeneratingCombo(true);
     
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `You are an AI that creates comprehensive word exercises for a fluency training app. Your purpose is to provide both a definition and a contextual sentence for word retrieval practice.
+      const requestBody = {
+        contents: [{
+          parts: [{
+            text: `You are an AI that creates comprehensive word exercises for a fluency training app. Your purpose is to provide both a definition and a contextual sentence for word retrieval practice.
 
 You will be given a word in \`<word>\` tags. Your response must follow these strict rules:
 
@@ -562,18 +517,12 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
 <sentence>The ___ used its trunk to pick up peanuts from the zoo visitor's hand.</sentence>\`
 
 <word>${word}</word>`
-              }]
-            }]
-          })
-        }
-      );
+          }]
+        }]
+      };
 
-      if (!response.ok) {
-        throw new Error('Failed to generate combo content');
-      }
-
-      const data = await response.json();
-      const text = data.candidates[0].content.parts[0].text.trim();
+      const response = await callGeminiWithFallback(geminiApiKey, 'gemini-2.5-flash-lite-preview-06-17', requestBody);
+      const text = response.text;
       
       // Extract definition, part of speech, and sentence
       const posMatch = text.match(/<pos>(.*?)<\/pos>/s);
@@ -938,17 +887,10 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     setGrading(true);
     
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `I am in a fluency trainer app. For the given word and user's definition, I need to:
+      const requestBody = {
+        contents: [{
+          parts: [{
+            text: `I am in a fluency trainer app. For the given word and user's definition, I need to:
 
 1.  First, provide a concise, accurate definition of the word in \`<definition>\` tags. The definition should be in a dictionary style, without using the word itself.
     *   **Crucially, combine related senses into a single, cohesive definition.** Do not use semicolons to separate slight variations of the same core meaning. For example, for 'keep', a good definition would be "To retain possession of, or maintain in a particular state, place, or condition," not "To retain possession of; to maintain in a particular state...".
@@ -971,18 +913,12 @@ Respond ONLY with the definition and grade in the specified tags, nothing else.
 
 Word: ${word}
 User's definition: ${userDef}`
-              }]
-            }]
-          })
-        }
-      );
+          }]
+        }]
+      };
 
-      if (!response.ok) {
-        throw new Error('Failed to grade definition');
-      }
-
-      const data = await response.json();
-      const text = data.candidates[0].content.parts[0].text;
+      const response = await callGeminiWithFallback(geminiApiKey, 'gemini-2.5-flash-lite-preview-06-17', requestBody);
+      const text = response.text;
       
       // Extract definition and grade
       const defMatch = text.match(/<definition>(.*?)<\/definition>/s);

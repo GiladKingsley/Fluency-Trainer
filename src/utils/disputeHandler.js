@@ -1,7 +1,7 @@
 // Dispute handling utility for ZipfTrainer
 // Handles AI-based dispute resolution for ambiguous answers
 
-const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+import { callGeminiWithFallback } from './geminiApi';
 /**
  * Generates dispute resolution prompts for different training modes
  */
@@ -84,30 +84,16 @@ export const resolveDispute = async (apiKey, mode, context) => {
   const prompt = getDisputePrompt(mode, context);
 
   try {
-    const response = await fetch(`${GEMINI_API_BASE}?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
+    const requestBody = {
+      contents: [{
+        parts: [{
+          text: prompt
         }]
-      })
-    });
+      }]
+    };
 
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-
-    if (!result) {
-      throw new Error('No response content received from API');
-    }
+    const response = await callGeminiWithFallback(apiKey, 'gemini-2.5-flash', requestBody);
+    const result = response.text;
 
     // Parse the response format: DECISION: [ACCEPT/REJECT]\nEXPLANATION: [explanation]
     const decisionMatch = result.match(/DECISION:\s*(ACCEPT|REJECT)/i);
