@@ -417,7 +417,7 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     if (!loading && wordData) {
       selectNewWord();
     }
-  }, [loading, wordData, trainingMode, selectNewWord]);
+  }, [loading, wordData, trainingMode]);
 
   const gradeDefinition = useCallback(async (word, userDef) => {
     if (!geminiApiKey) {
