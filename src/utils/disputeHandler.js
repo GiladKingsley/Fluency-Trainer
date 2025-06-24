@@ -16,8 +16,14 @@ EXPLANATION: [One sentence explaining your decision]`;
     case 'normal':
       return `${basePrompt}
 
-Context: The user was given this cloze test sentence with a blank to fill in:
+Context: The user was given cloze test sentences with blanks to fill in:
 "${context.clozeTest}"
+
+ORIGINAL SENTENCES (with correct word):
+"${context.originalSentences}"
+
+SENTENCES WITH USER'S WORD:
+"${context.userSentences}"
 
 The CORRECT WORD is: "${context.correctAnswer}"
 The user answered: "${context.userAnswer}"
@@ -25,10 +31,12 @@ The user answered: "${context.userAnswer}"
 Additional context provided to user: ${context.helpContent || 'None'}
 
 Consider whether the user's answer should be accepted by evaluating:
-- Does the user's answer fit grammatically and semantically in the sentence?
+- Does the user's answer fit grammatically and semantically in both sentences?
 - Is it a synonym, alternative form, or closely related word to "${context.correctAnswer}"?
 - Does it demonstrate understanding of the intended meaning, even if not the exact target word?
-- Would a reasonable person consider "${context.userAnswer}" a valid alternative to "${context.correctAnswer}" in this entire context?`;
+- Would a reasonable person consider "${context.userAnswer}" a valid alternative to "${context.correctAnswer}" in these contexts?
+
+Remember: The word must work well in ALL provided sentences to be accepted.`;
 
     case 'definition':
       return `${basePrompt}
@@ -130,10 +138,20 @@ export const resolveDispute = async (apiKey, mode, context) => {
 export const prepareDisputeContext = (mode, state) => {
   switch (mode) {
     case 'normal':
+      // Create sentences with both the correct word and user's word for comparison
+      const clozeText = typeof state.clozeTest === 'string' ? state.clozeTest : '';
+      const normalCorrectWord = state.currentWord?.word || state.currentWord || '';
+      const normalUserWord = state.userAnswer || '';
+      
+      const originalSentences = clozeText ? clozeText.replace(/_+/g, normalCorrectWord) : '';
+      const userSentences = clozeText ? clozeText.replace(/_+/g, normalUserWord) : '';
+      
       return {
-        clozeTest: state.clozeTest,
-        correctAnswer: state.currentWord?.word || state.currentWord,
-        userAnswer: state.userAnswer,
+        clozeTest: clozeText,
+        originalSentences: originalSentences,
+        userSentences: userSentences,
+        correctAnswer: normalCorrectWord,
+        userAnswer: normalUserWord,
         helpContent: state.helpContent
       };
 
@@ -146,12 +164,31 @@ export const prepareDisputeContext = (mode, state) => {
       };
 
     case 'combo':
+      const comboCorrectWord = state.currentWord?.word || state.currentWord || '';
+      const comboUserWord = state.userComboAnswer || '';
+      
+      let formattedContent = '';
+      let originalSentence = '';
+      let userSentence = '';
+      
+      if (typeof state.comboContent === 'object' && state.comboContent) {
+        // Extract definition part
+        const definitionPart = `Definition:\n${state.comboContent.partOfSpeech ? `${state.comboContent.partOfSpeech}\n` : ''}${state.comboContent.definition}`;
+        
+        // Handle sentence with blanks
+        const sentenceText = state.comboContent.sentence || '';
+        originalSentence = sentenceText ? sentenceText.replace(/_+/g, comboCorrectWord) : '';
+        userSentence = sentenceText ? sentenceText.replace(/_+/g, comboUserWord) : '';
+        
+        formattedContent = `${definitionPart}\n\nOriginal Context:\n"${originalSentence}"\n\nContext with User's Word:\n"${userSentence}"`;
+      } else {
+        formattedContent = state.comboContent || '';
+      }
+      
       return {
-        comboContent: typeof state.comboContent === 'object' && state.comboContent 
-          ? `Definition:\n${state.comboContent.partOfSpeech ? `${state.comboContent.partOfSpeech}\n` : ''}${state.comboContent.definition}\n\nContext:\n"${state.comboContent.sentence}"`
-          : state.comboContent,
-        correctAnswer: state.currentWord?.word || state.currentWord,
-        userAnswer: state.userComboAnswer,
+        comboContent: formattedContent,
+        correctAnswer: comboCorrectWord,
+        userAnswer: comboUserWord,
       };
 
     default:
