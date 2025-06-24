@@ -35,6 +35,7 @@ const getInitialState = () => {
   const savedGeminiKey = localStorage.getItem('geminiApiKey');
   const savedReverseZipfLevel = localStorage.getItem('reverseZipfLevel');
   const savedNormalZipfLevel = localStorage.getItem('normalZipfLevel');
+  const savedDefinitionZipfLevel = localStorage.getItem('definitionZipfLevel');
 
   return {
     zipfLevels: savedZipfLevels
@@ -46,6 +47,7 @@ const getInitialState = () => {
     geminiApiKey: savedGeminiKey || '',
     reverseZipfLevel: savedReverseZipfLevel ? parseFloat(savedReverseZipfLevel) : 5.0,
     normalZipfLevel: savedNormalZipfLevel ? parseFloat(savedNormalZipfLevel) : 5.0,
+    definitionZipfLevel: savedDefinitionZipfLevel ? parseFloat(savedDefinitionZipfLevel) : 5.0,
   };
 };
 
@@ -63,6 +65,7 @@ const ZipfTrainer = () => {
     geminiApiKey: initialGeminiKey,
     reverseZipfLevel: initialReverseZipfLevel,
     normalZipfLevel: initialNormalZipfLevel,
+    definitionZipfLevel: initialDefinitionZipfLevel,
   } = getInitialState();
   const [zipfLevels, setZipfLevels] = useState(initialZipfLevels);
   const [trainingMode, setTrainingMode] = useState(initialMode);
@@ -82,6 +85,13 @@ const ZipfTrainer = () => {
   const [grading, setGrading] = useState(false);
   const [reverseZipfLevel, setReverseZipfLevel] = useState(initialReverseZipfLevel);
 
+  // Definition mode state
+  const [wordDefinition, setWordDefinition] = useState('');
+  const [userGuess, setUserGuess] = useState('');
+  const [definitionZipfLevel, setDefinitionZipfLevel] = useState(initialDefinitionZipfLevel);
+  const [generatingDefinition, setGeneratingDefinition] = useState(false);
+  const [definitionScore, setDefinitionScore] = useState(null);
+
   // API Key modal state
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
@@ -91,6 +101,7 @@ const ZipfTrainer = () => {
 
   const normalModeInputRef = useRef(null);
   const reverseModeInputRef = useRef(null);
+  const definitionModeInputRef = useRef(null);
 
   // Function to check if a word is a name
   const isName = useCallback((word) => {
@@ -222,6 +233,104 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     }
   }, [geminiApiKey]);
 
+  const generateDefinition = useCallback(async (word) => {
+    if (!geminiApiKey) {
+      return null;
+    }
+
+    setGeneratingDefinition(true);
+    
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `You are an AI that creates Oxford Dictionary-style definitions for English words. Your purpose is to help adults train their vocabulary by providing clear, precise definitions for word guessing exercises.
+
+You will be given a word in \`<word>\` tags. Your response must follow these strict rules:
+
+**1. Valid Word Handling:**
+- For any valid English word, you must create a clear, concise definition in the style of the Oxford English Dictionary.
+- The definition must be enclosed in \`<definition>\` tags.
+- The part of speech must be enclosed in \`<pos>\` tags at the beginning.
+- The definition should be 1-3 sentences long and capture the most common meaning of the word.
+- Use simple, clear language that would help someone identify the word without being too obvious.
+- Do NOT include the target word or its root form in the definition.
+- **Example:** For the word "telescope", a valid output would be:
+\`<pos>noun</pos>
+<definition>An optical instrument designed to make distant objects appear nearer and larger by using lenses or mirrors to collect and focus light.</definition>\`
+
+**2. Invalid Word Handling:**
+- If the input is not a real English word, your entire output must be the exact text \`NOT_A_WORD\`.
+- Do not use any tags for this output.
+- Invalid words include:
+    - Numbers (e.g., "5", "123")
+    - Single letters (e.g., "s", "x")
+    - Symbols (e.g., "&", "@")
+    - Random character combinations (e.g., "pvzr")
+    - Malformed words (e.g., "thing's", "w8")
+    - Most personal names or obscure trademarks (e.g., "Isabella", "Noah")
+- **Exception:** You may treat widely known place names with cultural significance as valid words (e.g., "hollywood", "paris").
+
+**3. Definition Quality Requirements:**
+- **Clear and precise:** The definition should be unambiguous and help identify the specific word.
+- **Appropriate difficulty:** Not too obvious, but not so obscure that it's impossible to guess.
+- **Standard format:** Use formal dictionary language.
+- **Complete:** Provide enough information to distinguish this word from similar concepts.
+- **Avoid circular definitions:** Don't use the word itself or obvious derivatives.
+
+<word>${word}</word>`
+              }]
+            }]
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to generate definition');
+      }
+
+      const data = await response.json();
+      const text = data.candidates[0].content.parts[0].text.trim();
+      
+      if (text === 'NOT_A_WORD') {
+        return 'NOT_A_WORD';
+      }
+      
+      // Extract part of speech and definition from tags
+      const posMatch = text.match(/<pos>(.*?)<\/pos>/s);
+      const definitionMatch = text.match(/<definition>(.*?)<\/definition>/s);
+      
+      if (posMatch && definitionMatch) {
+        return {
+          partOfSpeech: posMatch[1].trim(),
+          definition: definitionMatch[1].trim()
+        };
+      }
+      
+      // Fallback for old format or if tags are missing
+      if (definitionMatch) {
+        return {
+          partOfSpeech: null,
+          definition: definitionMatch[1].trim()
+        };
+      }
+      
+      throw new Error('Invalid response format');
+    } catch (error) {
+      console.error('Error generating definition:', error);
+      throw error;
+    } finally {
+      setGeneratingDefinition(false);
+    }
+  }, [geminiApiKey]);
+
   const selectNewWordNormal = useCallback(async () => {
     if (!wordData) return;
 
@@ -279,15 +388,55 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     setShowAnswer(false);
   }, [wordData, reverseZipfLevel, getWordsInZipfRange]);
 
+  const selectNewWordDefinition = useCallback(async () => {
+    if (!wordData) return;
+
+    const wordsInRange = getWordsInZipfRange(definitionZipfLevel);
+    if (wordsInRange.length === 0) {
+      console.error('No words found in range');
+      return;
+    }
+
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (attempts < maxAttempts) {
+      const randomWord = wordsInRange[Math.floor(Math.random() * wordsInRange.length)];
+      
+      try {
+        const definitionResult = await generateDefinition(randomWord);
+        if (definitionResult === 'NOT_A_WORD') {
+          attempts++;
+          continue; // Try another word
+        }
+        
+        setCurrentWord(randomWord);
+        setWordDefinition(definitionResult);
+        setUserGuess('');
+        setDefinitionScore(null);
+        setShowAnswer(false);
+        return;
+      } catch (error) {
+        attempts++;
+        if (attempts === maxAttempts) {
+          console.error('Failed to generate definition after', maxAttempts, 'attempts');
+          return;
+        }
+      }
+    }
+  }, [wordData, definitionZipfLevel, generateDefinition, getWordsInZipfRange]);
+
   const selectNewWord = useCallback(async () => {
     if (!wordData) return;
 
     if (trainingMode === 'reverse') {
       selectNewWordReverse();
+    } else if (trainingMode === 'definition') {
+      await selectNewWordDefinition();
     } else {
       await selectNewWordNormal();
     }
-  }, [wordData, trainingMode, selectNewWordReverse, selectNewWordNormal]);
+  }, [wordData, trainingMode, selectNewWordReverse, selectNewWordDefinition, selectNewWordNormal]);
 
   // Function to filter out invalid words
   const filterValidWords = useCallback((words) => {
@@ -416,6 +565,10 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
     localStorage.setItem('normalZipfLevel', normalZipfLevel.toString());
   }, [normalZipfLevel]);
 
+  useEffect(() => {
+    localStorage.setItem('definitionZipfLevel', definitionZipfLevel.toString());
+  }, [definitionZipfLevel]);
+
   // Select new word when relevant state changes
   useEffect(() => {
     if (!loading && wordData) {
@@ -528,6 +681,11 @@ User's definition: ${userDef}`
     setUserDefinition('');
     setScore(null);
     setCorrectDefinition('');
+    
+    // Reset definition mode state
+    setWordDefinition('');
+    setUserGuess('');
+    setDefinitionScore(null);
   };
 
   const handleNextWordNormal = useCallback(() => {
@@ -563,6 +721,31 @@ User's definition: ${userDef}`
     selectNewWord();
   }, [score, selectNewWord]);
 
+  const handleNextWordDefinition = useCallback(() => {
+    // Apply difficulty adjustment based on the current score
+    if (definitionScore !== null) {
+      if (definitionScore === 1) {
+        // Correct - make it harder (lower Zipf)
+        setDefinitionZipfLevel(prev => prev - ZIPF_ADJUSTMENT);
+      } else {
+        // Incorrect - make it easier (higher Zipf)
+        setDefinitionZipfLevel(prev => prev + ZIPF_ADJUSTMENT);
+      }
+    }
+    
+    // Select new word
+    selectNewWord();
+  }, [definitionScore, selectNewWord]);
+
+  const handleDefinitionAnswer = useCallback(() => {
+    if (!userGuess.trim()) return;
+    
+    const correct = isAnswerCorrect(userGuess, currentWord);
+    setDefinitionScore(correct ? 1 : 0);
+    setShowAnswer(true);
+    // Don't adjust difficulty here - wait for user to click "Next Word"
+  }, [userGuess, currentWord, isAnswerCorrect]);
+
   // Auto-focus input when a new question is ready
   useEffect(() => {
     if (trainingMode === 'normal' && clozeTest && normalModeInputRef.current) {
@@ -582,6 +765,15 @@ User's definition: ${userDef}`
       return () => clearTimeout(timer);
     }
   }, [trainingMode, currentWord, score]);
+
+  useEffect(() => {
+    if (trainingMode === 'definition' && wordDefinition && definitionModeInputRef.current) {
+      const timer = setTimeout(() => {
+        definitionModeInputRef.current.focus();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [trainingMode, wordDefinition]);
 
   // Global keyboard event listener for Enter key
   useEffect(() => {
@@ -605,6 +797,12 @@ User's definition: ${userDef}`
             gradeDefinition(currentWord, userDefinition);
           }
         }
+             } else if (trainingMode === 'definition') {
+         if (showAnswer) {
+           handleNextWordDefinition();
+         } else if (activeElement === definitionModeInputRef.current) {
+           handleDefinitionAnswer();
+         }
       }
     };
 
@@ -621,6 +819,8 @@ User's definition: ${userDef}`
     handleNormalAnswer,
     handleNextWordNormal,
     handleNextWordReverse,
+    handleNextWordDefinition,
+    handleDefinitionAnswer,
     gradeDefinition,
   ]);
 
@@ -648,7 +848,7 @@ User's definition: ${userDef}`
                 : 'text-gray-600 hover:text-gray-800'}`}
             >
               Normal Mode
-              <div className="text-xs opacity-75">Definition → Word</div>
+              <div className="text-xs opacity-75">Context → Word</div>
             </button>
             <button
               onClick={() => handleModeChange('reverse')}
@@ -658,6 +858,15 @@ User's definition: ${userDef}`
             >
               Reverse Mode
               <div className="text-xs opacity-75">Word → Definition</div>
+            </button>
+            <button
+              onClick={() => handleModeChange('definition')}
+              className={`flex-1 px-4 py-3 rounded-md font-medium transition-all duration-200 ${trainingMode === 'definition' 
+                ? 'bg-white text-blue-600 shadow-sm' 
+                : 'text-gray-600 hover:text-gray-800'}`}
+            >
+              Definition Mode
+              <div className="text-xs opacity-75">Definition → Word</div>
             </button>
           </div>
           
@@ -671,6 +880,8 @@ User's definition: ${userDef}`
               <div className="text-sm font-semibold text-gray-700">
                 {trainingMode === 'reverse' 
                   ? reverseZipfLevel.toFixed(2)
+                  : trainingMode === 'definition'
+                  ? definitionZipfLevel.toFixed(2)
                   : normalZipfLevel.toFixed(2)}
               </div>
             </div>
@@ -977,6 +1188,143 @@ User's definition: ${userDef}`
           </div>
         )}
 
+        {/* Definition Mode - Definition Display and Word Input */}
+        {trainingMode === 'definition' && (
+          <div className="space-y-6">
+            {!geminiApiKey ? (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <h3 className="text-sm font-medium text-yellow-800 mb-2">
+                  API Key Required
+                </h3>
+                <p className="text-sm text-gray-700 mb-3">
+                  Definition mode requires a Gemini API key to generate dictionary-style definitions. Click "Set API Key" above to get started.
+                </p>
+                <button
+                  onClick={() => {
+                    setTempApiKey('');
+                    setShowApiKeyModal(true);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  Set API Key
+                </button>
+              </div>
+            ) : generatingDefinition ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+                <p className="text-gray-600">Generating definition...</p>
+              </div>
+            ) : wordDefinition ? (
+              <div className="space-y-6">
+                {/* Question Prompt */}
+                <div className="text-left">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                    Can you guess this word?
+                  </h3>
+                </div>
+
+                {/* Definition Display */}
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-xl border border-purple-100">
+                  <div className="bg-white p-6 rounded-lg shadow-sm border border-purple-200">
+                    {/* Display part of speech and definition */}
+                    {typeof wordDefinition === 'object' && wordDefinition.partOfSpeech ? (
+                      <>
+                        <div className="mb-3">
+                          <span className="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                            {wordDefinition.partOfSpeech}
+                          </span>
+                        </div>
+                        <p className="text-lg text-gray-800 leading-relaxed text-left">
+                          {wordDefinition.definition}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-lg text-gray-800 leading-relaxed text-left">
+                        {typeof wordDefinition === 'object' ? wordDefinition.definition : wordDefinition}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Answer Input */}
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    ref={definitionModeInputRef}
+                    value={userGuess}
+                    onChange={(e) => setUserGuess(e.target.value)}
+                    placeholder="Type your guess here..."
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700 placeholder-gray-400"
+                    disabled={showAnswer}
+                  />
+                  
+                  {!showAnswer && (
+                    <button
+                      onClick={handleDefinitionAnswer}
+                      disabled={!userGuess.trim()}
+                      className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
+                    >
+                      Submit Guess
+                    </button>
+                  )}
+                </div>
+
+                {/* Answer Feedback */}
+                {showAnswer && (
+                  <div className="space-y-4">
+                    <div className={`p-4 rounded-xl border-2 ${
+                      definitionScore === 1 
+                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' 
+                        : 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200'
+                    }`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-lg font-semibold text-gray-800">
+                          {definitionScore === 1 ? 'Correct!' : 'Incorrect'}
+                        </h4>
+                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                          definitionScore === 1 
+                            ? 'bg-green-200 text-green-800' 
+                            : 'bg-red-200 text-red-800'
+                        }`}>
+                          {definitionScore === 1 ? 'Right' : 'Wrong'}
+                        </span>
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="bg-white p-3 rounded-lg border border-gray-100">
+                          <h5 className="font-medium text-gray-800 mb-1">
+                            Correct Answer
+                          </h5>
+                          <p className="text-gray-700">{currentWord}</p>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-gray-100">
+                          <h5 className="font-medium text-gray-800 mb-1">
+                            Your Guess
+                          </h5>
+                          <p className={`${
+                            definitionScore === 1 ? 'text-green-700' : 'text-red-600'
+                          }`}>{userGuess}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={handleNextWordDefinition}
+                      className="w-full px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                    >
+                      Next Word
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-600">Loading word...</p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* API Key Modal */}
         {showApiKeyModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1071,7 +1419,7 @@ User's definition: ${userDef}`
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Two Training Modes:</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Three Training Modes:</h3>
                   
                   <div className="space-y-4">
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
@@ -1085,6 +1433,13 @@ User's definition: ${userDef}`
                       <h4 className="font-semibold text-purple-800 mb-2">✍️ Reverse Mode (Word → Definition)</h4>
                       <p className="text-sm text-purple-700">
                         Define words and get AI-powered feedback. Uses Google's Gemini AI to evaluate your definitions with detailed scoring (1-5) and helps you understand concepts more deeply.
+                      </p>
+                    </div>
+
+                    <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                      <h4 className="font-semibold text-indigo-800 mb-2">🔍 Definition Mode (Definition → Word)</h4>
+                      <p className="text-sm text-indigo-700">
+                        Guess words from Oxford Dictionary-style definitions. Improves your vocabulary recognition and helps you connect formal definitions to everyday words you know.
                       </p>
                     </div>
                   </div>
