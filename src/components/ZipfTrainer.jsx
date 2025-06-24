@@ -59,6 +59,9 @@ const ZipfTrainer = () => {
   // API Key modal state
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
+  
+  // Welcome modal state
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   // Simple Levenshtein distance for fuzzy matching
   const levenshteinDistance = (str1, str2) => {
@@ -115,7 +118,6 @@ const ZipfTrainer = () => {
 
   const generateClozeTest = useCallback(async (word) => {
     if (!geminiApiKey) {
-      alert('Please enter your Gemini API key to use cloze tests');
       return null;
     }
 
@@ -322,6 +324,15 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
       });
   }, []);
 
+  // Check if first time user and show welcome modal
+  useEffect(() => {
+    const hasVisited = localStorage.getItem('hasVisitedBefore');
+    if (!hasVisited) {
+      setShowWelcomeModal(true);
+      localStorage.setItem('hasVisitedBefore', 'true');
+    }
+  }, []);
+
   // Save state to localStorage
   useEffect(() => {
     localStorage.setItem('zipfLevels', JSON.stringify(zipfLevels));
@@ -353,7 +364,6 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
 
   const gradeDefinition = useCallback(async (word, userDef) => {
     if (!geminiApiKey) {
-      alert('Please enter your Gemini API key to use reverse mode');
       return;
     }
 
@@ -548,7 +558,16 @@ User's definition: ${userDef}`
           </div>
           
           {/* Settings Menu */}
-          <div className="relative">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowWelcomeModal(true)}
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              title="Help"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
             <button
               onClick={() => {
                 setTempApiKey(geminiApiKey);
@@ -557,7 +576,7 @@ User's definition: ${userDef}`
               className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
               title="Settings"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
@@ -909,6 +928,85 @@ User's definition: ${userDef}`
                     {geminiApiKey ? 'Update' : 'Set'} Key
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Welcome/Help Modal */}
+        {showWelcomeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Welcome to Fluency Trainer!
+                </h2>
+                <button
+                  onClick={() => setShowWelcomeModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="space-y-6 text-gray-700">
+                <div>
+                  <p className="text-lg mb-4">
+                    Enhance your <strong>spoken fluency</strong> by practicing active word retrieval. This app goes beyond passive reading to train your ability to produce language efficiently.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Two Training Modes:</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <h4 className="font-semibold text-blue-800 mb-2">🧩 Normal Mode (Cloze Tests)</h4>
+                      <p className="text-sm text-blue-700">
+                        Fill in the blanks in two sentences that use the same word in different contexts. This trains your ability to recognize words in various situations and strengthens mental connections between concepts and vocabulary.
+                      </p>
+                    </div>
+                    
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                      <h4 className="font-semibold text-purple-800 mb-2">✍️ Reverse Mode (Word → Definition)</h4>
+                      <p className="text-sm text-purple-700">
+                        Define words and get AI-powered feedback. Uses Google's Gemini AI to evaluate your definitions with detailed scoring (1-5) and helps you understand concepts more deeply.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800">🎯 Adaptive Difficulty</h3>
+                  <p className="text-sm">
+                    The app automatically adjusts word difficulty based on your performance using scientific word frequency data:
+                  </p>
+                  <ul className="text-sm mt-2 ml-4 space-y-1">
+                    <li><strong>Success:</strong> You'll face rarer, more challenging words</li>
+                    <li><strong>Struggle:</strong> The app provides more common, easier words</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800">🚀 Getting Started</h3>
+                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <p className="text-sm text-yellow-800 mb-2">
+                      <strong>First:</strong> Get your free Gemini API key from <a href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>
+                    </p>
+                    <p className="text-sm text-yellow-800">
+                      <strong>Then:</strong> Click the settings gear (⚙️) in the top-right to add your API key and start training!
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={() => setShowWelcomeModal(false)}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Start Training!
+                </button>
               </div>
             </div>
           </div>
