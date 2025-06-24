@@ -2247,27 +2247,34 @@ User's definition: ${userDef}`
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-200">Three Training Modes</h3>
+                  <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-200">Four Training Modes</h3>
                   
                   <div className="space-y-4">
                     <div className="bg-slate-50 dark:bg-zinc-800 p-5 rounded-lg border border-slate-200 dark:border-zinc-700">
                       <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-3">Normal Mode (Cloze Tests)</h4>
                       <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                        Fill in the blanks in two sentences that use the same word in different contexts. This trains your ability to recognize words in various situations and strengthens mental connections between concepts and vocabulary.
+                        Simulates "tip of the tongue" moments - the core fluency bottleneck. Fill in blanks in sentences to practice active word retrieval.
                       </p>
                     </div>
                     
                     <div className="bg-slate-50 dark:bg-zinc-800 p-5 rounded-lg border border-slate-200 dark:border-zinc-700">
                       <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-3">Reverse Mode (Word → Definition)</h4>
                       <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                        Define words and get AI-powered feedback. Uses Google's Gemini AI to evaluate your definitions with detailed scoring (1-5) and helps you understand concepts more deeply.
+                        Define words yourself - a surprisingly difficult verbal exercise. Turns out humans aren't dictionaries! AI-powered grading.
                       </p>
                     </div>
 
                     <div className="bg-slate-50 dark:bg-zinc-800 p-5 rounded-lg border border-slate-200 dark:border-zinc-700">
                       <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-3">Definition Mode (Definition → Word)</h4>
                       <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                        Guess words from Oxford Dictionary-style definitions. Improves your vocabulary recognition and helps you connect formal definitions to everyday words you know.
+                        Guess words from definitions - feels like a fun word game that might help improve your active vocabulary.
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-zinc-800 p-5 rounded-lg border border-slate-200 dark:border-zinc-700">
+                      <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-3">Combo Mode (Definition + Context → Word)</h4>
+                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                        Definition + context sentence - removes ambiguity to the minimum by providing extra clues.
                       </p>
                     </div>
                   </div>
