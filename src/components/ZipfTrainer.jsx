@@ -29,6 +29,7 @@ const ZipfTrainer = () => {
   const [currentWord, setCurrentWord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [nameData, setNameData] = useState(new Set());
 
   // Get initial state from localStorage or defaults
   const {
@@ -62,6 +63,11 @@ const ZipfTrainer = () => {
   
   // Welcome modal state
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
+  // Function to check if a word is a name
+  const isName = useCallback((word) => {
+    return nameData.has(word.toLowerCase());
+  }, [nameData]);
 
   // Simple Levenshtein distance for fuzzy matching
   const levenshteinDistance = (str1, str2) => {
@@ -280,25 +286,69 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
   }, [wordData, trainingMode, selectNewWordReverse, selectNewWordNormal]);
 
   // Function to filter out invalid words
-  const filterValidWords = (words) => {
+  const filterValidWords = useCallback((words) => {
     const validWords = {};
     for (const [word, data] of Object.entries(words)) {
       // Check if word is valid:
       // - At least 2 characters long
       // - Only contains letters, apostrophes, hyphens, and spaces (valid word characters)
       // - No numbers or other special characters
+      // - Not a common name
       if (
         word.length >= 2 &&
-        /^[a-zA-Z'\- ]+$/.test(word)
+        /^[a-zA-Z'\- ]+$/.test(word) &&
+        !isName(word)
       ) {
         validWords[word] = data;
       }
     }
     return validWords;
-  };
+  }, [isName]);
+
+  // Load name data
+  useEffect(() => {
+    const loadNameData = async () => {
+      try {
+        const [maleResponse, femaleResponse] = await Promise.all([
+          fetch('/Fluency-Trainer/data/male.txt').catch(() => fetch('/data/male.txt')),
+          fetch('/Fluency-Trainer/data/female.txt').catch(() => fetch('/data/female.txt'))
+        ]);
+
+        const [maleText, femaleText] = await Promise.all([
+          maleResponse.text(),
+          femaleResponse.text()
+        ]);
+
+        const names = new Set();
+        
+        // Add male names
+        maleText.split('\n').forEach(name => {
+          const trimmed = name.trim().toLowerCase();
+          if (trimmed) names.add(trimmed);
+        });
+        
+        // Add female names
+        femaleText.split('\n').forEach(name => {
+          const trimmed = name.trim().toLowerCase();
+          if (trimmed) names.add(trimmed);
+        });
+
+        setNameData(names);
+      } catch (error) {
+        console.error('Error loading name data:', error);
+        // Continue without name filtering if loading fails
+        setNameData(new Set());
+      }
+    };
+
+    loadNameData();
+  }, []);
 
   // Load word frequency data
   useEffect(() => {
+    // Only load word data after name data is ready
+    if (nameData.size === 0) return;
+
     // Try production path first, fallback to dev path
     const productionPath = '/Fluency-Trainer/data/en_frequencies.json';
     const devPath = '/data/en_frequencies.json';
@@ -329,7 +379,7 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
             setLoading(false);
           });
       });
-  }, []);
+  }, [nameData, filterValidWords]);
 
   // Check if first time user and show welcome modal
   useEffect(() => {
