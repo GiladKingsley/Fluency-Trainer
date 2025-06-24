@@ -208,29 +208,36 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
 - Each sentence must be enclosed in its own \`<sentence1>\` and \`<sentence2>\` tags.
 - In each sentence, include the target word naturally in its proper location.
 - The two sentences should demonstrate different meanings, uses, or contexts of the same word.
-- **Example:** For the word "bank", a valid output would be:
-\`<sentence1>After receiving her paycheck, Sarah walked to the bank to deposit the money into her savings account.</sentence1>
-<sentence2>The children enjoyed their picnic on the grassy bank of the river while watching the ducks swim by.</sentence2>\`
 
 **2. Invalid Word Handling:**
 - If the input is not a real English word, your entire output must be the exact text \`NOT_A_WORD\`.
 - Do not use any tags for this output.
 - Invalid words include:
-    - Numbers (e.g., "5", "123")
-    - Single letters (e.g., "s", "x")
-    - Symbols (e.g., "&", "@")
+    - Numbers
     - Random character combinations (e.g., "pvzr")
-    - Malformed words (e.g., "thing's", "w8")
+    - Malformed words or typos (e.g., "thing's", "w8")
     - Most personal names or obscure trademarks (e.g., "Isabella", "Noah")
+    - Most places
 - **Exception:** You may treat widely known place names with cultural significance as valid words (e.g., "hollywood", "paris").
 
 **3. Sentence Quality Requirements:**
-- **Two distinct contexts:** Each sentence should show the word in a meaningfully different context or usage.
-- **Unambiguous:** Each sentence's context must strongly point to the target word, leaving no room for synonyms or other plausible words.
-- **Exact Match:** The target word should appear exactly as provided in the original word.
-- **Longer and descriptive:** Each sentence should be substantial (10+ words) and include descriptive details that make the context very clear.
-- **Independent:** Each sentence should be completely independent and understandable on its own.
-- **No Synonyms:** Do not use synonyms of the target word within either sentence.
+- **A. Two distinct contexts:** Each sentence should show the word in a meaningfully different context or usage. The more different, the better.
+
+- **B. Extreme Unambiguity:** The context of each sentence must be so specific that it points to the target word and *only* the target word. There should be zero room for synonyms or other plausible words. This is the most important rule.
+    - **Pristine Example:** For the word "crane".
+        \`<sentence1>Identifiable by its long legs, slender neck, and a distinctive red patch of skin on its forehead, the Sandhill crane performed its elaborate courtship dance in the open prairie, a behavior unique to this large bird.</sentence1>
+        <sentence2>The dockworker skillfully operated the towering port crane, using its powerful hydraulic arm and cable system to lift a 40-foot shipping container from the cargo ship and place it precisely onto the waiting truck chassis.</sentence2>\`
+    - **Reasoning:** This example is perfect because the specific details in each sentence (like "Sandhill" and "courtship dance" for the bird; and "port" and "shipping container" for the machine) eliminate all possible synonyms. No other word but "crane" fits both of these hyper-specific descriptions.
+
+- **C. Strategic Use of Two Sentences:** Consciously use the fact that you are providing two sentences for the same word. By making the two contexts maximally different (e.g., biology vs. industrial machinery; a concrete object vs. an abstract concept), you create a powerful meta-clue that forces the user to find the single, specific word that can bridge those two disparate worlds.
+
+- **D. Exact Match:** The target word should appear *exactly* as provided in the original word (e.g. if the word is "my" then do not use the word "mine" as suuficiently close).
+
+- **E. Longer and Descriptive:** Each sentence should be substantial (generally 15-30 words) and packed with descriptive details that help enforce the "Extreme Unambiguity" rule.
+
+- **F. Independent:** Each sentence should be completely independent and understandable on its own, without relying on the other.
+
+- **G. No Markdown formatting** 
 
 <word>${word}</word>`
               }]
@@ -302,29 +309,29 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
 **1. Valid Word Handling:**
 - For any valid English word, you must create a clear, concise definition in the style of the Oxford English Dictionary.
 - The definition must be enclosed in \`<definition>\` tags.
-- The part of speech must be enclosed in \`<pos>\` tags at the beginning.
-- The definition should be 1-3 sentences long and capture the most common meaning of the word.
-- Use simple, clear language that would help someone identify the word without being too obvious.
+- The part of speech must be enclosed in \`<pos>\` tags at the end, after the definition/s.
 - Do NOT include the target word or its root form in the definition.
+- If the word has multiple definitions, write them all with semicolons as separators, but it's crucial that if the definitions in mind are actually quite similar, try to combine them into a unifying singular definition.
+- In cases where a word has multiple definitions with different parts of speech, write them all with semicolons as separators. For multiple parts of speech, separate them with semicolons in the \`<pos>\` tags (e.g., \`<pos>noun; verb</pos>\`).
+- You may get a word that is an extension of a word, such as with a prefix or suffix or plural, such as "un-" or "-able" or "s" or "es", in which case you should write the definition of the word presented taking into account the alterations from the root, instead of defining the root word like they would do in a dictionary.
 - **Example:** For the word "telescope", a valid output would be:
-\`<pos>noun</pos>
-<definition>An optical instrument designed to make distant objects appear nearer and larger by using lenses or mirrors to collect and focus light.</definition>\`
+\`<definition>An optical instrument designed to make distant objects appear nearer and larger by using lenses or mirrors to collect and focus light.</definition><pos>noun</pos>\`
+- **Example with multiple parts of speech:** For the word "run", a valid output would be:
+\`<definition>To move rapidly on foot; a continuous period of activity or performance; to operate or function.</definition><pos>verb; noun</pos>\`
 
 **2. Invalid Word Handling:**
 - If the input is not a real English word, your entire output must be the exact text \`NOT_A_WORD\`.
 - Do not use any tags for this output.
 - Invalid words include:
-    - Numbers (e.g., "5", "123")
-    - Single letters (e.g., "s", "x")
-    - Symbols (e.g., "&", "@")
+    - Numbers
     - Random character combinations (e.g., "pvzr")
     - Malformed words (e.g., "thing's", "w8")
     - Most personal names or obscure trademarks (e.g., "Isabella", "Noah")
+    - Most places
 - **Exception:** You may treat widely known place names with cultural significance as valid words (e.g., "hollywood", "paris").
 
 **3. Definition Quality Requirements:**
 - **Clear and precise:** The definition should be unambiguous and help identify the specific word.
-- **Appropriate difficulty:** Not too obvious, but not so obscure that it's impossible to guess.
 - **Standard format:** Use formal dictionary language.
 - **Complete:** Provide enough information to distinguish this word from similar concepts.
 - **Avoid circular definitions:** Don't use the word itself or obvious derivatives.
@@ -352,8 +359,11 @@ You will be given a word in \`<word>\` tags. Your response must follow these str
       const definitionMatch = text.match(/<definition>(.*?)<\/definition>/s);
       
       if (posMatch && definitionMatch) {
+        // Parse parts of speech - could be multiple separated by semicolons or commas
+        const partsOfSpeech = posMatch[1].trim().split(/[;,]/).map(pos => pos.trim()).filter(pos => pos);
+        
         return {
-          partOfSpeech: posMatch[1].trim(),
+          partOfSpeech: partsOfSpeech.length === 1 ? partsOfSpeech[0] : partsOfSpeech,
           definition: definitionMatch[1].trim()
         };
       }
@@ -1302,9 +1312,20 @@ User's definition: ${userDef}`
                     {typeof wordDefinition === 'object' && wordDefinition.partOfSpeech ? (
                       <>
                         <div className="mb-3">
-                          <span className="inline-block bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200 px-3 py-1 rounded-full text-sm font-medium">
-                            {wordDefinition.partOfSpeech}
-                          </span>
+                          {/* Handle both single and multiple parts of speech */}
+                          {Array.isArray(wordDefinition.partOfSpeech) ? (
+                            <div className="flex flex-wrap gap-2">
+                              {wordDefinition.partOfSpeech.map((pos, index) => (
+                                <span key={index} className="inline-block bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200 px-3 py-1 rounded-full text-sm font-medium">
+                                  {pos}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="inline-block bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200 px-3 py-1 rounded-full text-sm font-medium">
+                              {wordDefinition.partOfSpeech}
+                            </span>
+                          )}
                         </div>
                         <p className="text-lg text-gray-800 dark:text-gray-200 leading-relaxed text-left">
                           {wordDefinition.definition}
