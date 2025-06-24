@@ -1,8 +1,33 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 //please work lol
 const ZIPF_ADJUSTMENT = 0.05;
 const ZIPF_RANGE = 0.1;
 const PARTS_OF_SPEECH = ['noun', 'verb', 'adjective', 'adverb'];
+
+// Simple Levenshtein distance for fuzzy matching
+const levenshteinDistance = (str1, str2) => {
+  const matrix = [];
+  for (let i = 0; i <= str2.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= str1.length; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= str2.length; i++) {
+    for (let j = 1; j <= str1.length; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  return matrix[str2.length][str1.length];
+};
 
 const getInitialState = () => {
   const savedZipfLevels = localStorage.getItem('zipfLevels');
@@ -64,38 +89,17 @@ const ZipfTrainer = () => {
   // Welcome modal state
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
+  const normalModeInputRef = useRef(null);
+  const reverseModeInputRef = useRef(null);
+
   // Function to check if a word is a name
   const isName = useCallback((word) => {
     return nameData.has(word.toLowerCase());
   }, [nameData]);
 
-  // Simple Levenshtein distance for fuzzy matching
-  const levenshteinDistance = (str1, str2) => {
-    const matrix = [];
-    for (let i = 0; i <= str2.length; i++) {
-      matrix[i] = [i];
-    }
-    for (let j = 0; j <= str1.length; j++) {
-      matrix[0][j] = j;
-    }
-    for (let i = 1; i <= str2.length; i++) {
-      for (let j = 1; j <= str1.length; j++) {
-        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
-          );
-        }
-      }
-    }
-    return matrix[str2.length][str1.length];
-  };
-
   // Check if user answer matches target word (with typo tolerance)
-  const isAnswerCorrect = (userInput, targetWord) => {
+  const isAnswerCorrect = useCallback((userInput, targetWord) => {
+    if (!userInput || !targetWord) return false;
     const normalizedUser = userInput.toLowerCase().trim();
     const normalizedTarget = targetWord.toLowerCase();
     
@@ -106,7 +110,7 @@ const ZipfTrainer = () => {
     // Allow 2 character difference for words 8+ letters
     const maxDistance = targetWord.length >= 8 ? 2 : targetWord.length >= 4 ? 1 : 0;
     return levenshteinDistance(normalizedUser, normalizedTarget) <= maxDistance;
-  };
+  }, []);
 
   const getWordsInZipfRange = useCallback((zipfLevel) => {
     if (!wordData) return [];
@@ -489,20 +493,21 @@ User's definition: ${userDef}`
     }
   }, [geminiApiKey]);
 
-  const handleNormalAnswer = () => {
+  const handleNormalAnswer = useCallback(() => {
     if (!userAnswer.trim()) return;
     
     const correct = isAnswerCorrect(userAnswer, currentWord);
     setNormalScore(correct ? 1 : 0);
     setShowAnswer(true);
     // Don't adjust difficulty here - wait for user to click "Next Word"
-  };
+  }, [userAnswer, currentWord, isAnswerCorrect]);
 
   const handleDifficulty = (harder) => {
     // This is now only used for manual difficulty adjustment if needed
     if (trainingMode === 'normal') {
       setNormalZipfLevel(prev => harder ? prev - ZIPF_ADJUSTMENT : prev + ZIPF_ADJUSTMENT);
     }
+    setCorrectDefinition('');
   };
 
   // Removed togglePartOfSpeech function as we no longer filter by parts of speech
@@ -525,7 +530,7 @@ User's definition: ${userDef}`
     setCorrectDefinition('');
   };
 
-  const handleNextWordNormal = () => {
+  const handleNextWordNormal = useCallback(() => {
     // Apply difficulty adjustment based on the current score
     if (normalScore !== null) {
       if (normalScore === 1) {
@@ -539,9 +544,9 @@ User's definition: ${userDef}`
     
     // Select new word
     selectNewWord();
-  };
+  }, [normalScore, selectNewWord]);
 
-  const handleNextWordReverse = () => {
+  const handleNextWordReverse = useCallback(() => {
     // Apply difficulty adjustment based on the current score
     // Higher Zipf = easier words, so correct answers should decrease Zipf (make harder)
     if (score !== null) {
@@ -556,7 +561,68 @@ User's definition: ${userDef}`
     
     // Select new word
     selectNewWord();
-  };
+  }, [score, selectNewWord]);
+
+  // Auto-focus input when a new question is ready
+  useEffect(() => {
+    if (trainingMode === 'normal' && clozeTest && normalModeInputRef.current) {
+      // Use a timeout to ensure focus happens after render and state updates.
+      const timer = setTimeout(() => {
+        normalModeInputRef.current.focus();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [trainingMode, clozeTest]);
+
+  useEffect(() => {
+    if (trainingMode === 'reverse' && currentWord && score === null && reverseModeInputRef.current) {
+      const timer = setTimeout(() => {
+        reverseModeInputRef.current.focus();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [trainingMode, currentWord, score]);
+
+  // Global keyboard event listener for Enter key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key !== 'Enter') return;
+
+      const activeElement = document.activeElement;
+
+      if (trainingMode === 'normal') {
+        if (showAnswer) {
+          handleNextWordNormal();
+        } else if (activeElement === normalModeInputRef.current) {
+          handleNormalAnswer();
+        }
+      } else if (trainingMode === 'reverse') {
+        if (score !== null) {
+          handleNextWordReverse();
+        } else if (activeElement === reverseModeInputRef.current && !e.shiftKey) {
+          e.preventDefault();
+          if (userDefinition.trim() && !grading && geminiApiKey) {
+            gradeDefinition(currentWord, userDefinition);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [
+    trainingMode,
+    showAnswer,
+    score,
+    userDefinition,
+    currentWord,
+    geminiApiKey,
+    grading,
+    handleNormalAnswer,
+    handleNextWordNormal,
+    handleNextWordReverse,
+    gradeDefinition,
+  ]);
 
   if (loading) {
     return <div className="text-center py-8">Loading word data...</div>;
@@ -703,14 +769,10 @@ User's definition: ${userDef}`
                 {/* Answer Input */}
                 <div className="space-y-4">
                   <input
+                    ref={normalModeInputRef}
                     type="text"
                     value={userAnswer}
                     onChange={(e) => setUserAnswer(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !showAnswer) {
-                        handleNormalAnswer();
-                      }
-                    }}
                     placeholder="Type your answer here..."
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 placeholder-gray-400"
                     disabled={showAnswer}
@@ -826,16 +888,9 @@ User's definition: ${userDef}`
             <div className="space-y-4">
               <div className="relative">
                 <textarea
+                  ref={reverseModeInputRef}
                   value={userDefinition}
                   onChange={(e) => setUserDefinition(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      if (userDefinition.trim() && !grading && score === null && geminiApiKey) {
-                        gradeDefinition(currentWord, userDefinition);
-                      }
-                    }
-                  }}
                   placeholder="Type your definition here... Be as detailed and accurate as possible!"
                   className="w-full h-36 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-700 placeholder-gray-400"
                   disabled={grading || score !== null}
