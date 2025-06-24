@@ -829,13 +829,17 @@ User's definition: ${userDef}`
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
-      <div className="max-w-2xl mx-auto p-4">
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+    <div className="min-h-screen bg-white">
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="bg-white">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Fluency Trainer</h1>
-          <p className="text-gray-600">Improve your vocabulary and definition skills</p>
+        <div className="text-center mb-10">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-4">
+            Fluency Trainer
+          </h1>
+          <p className="text-lg text-slate-600 max-w-lg mx-auto font-medium">
+            Enhance fluency through general verbal retrieval practice
+          </p>
         </div>
 
         {/* Mode Selection */}
