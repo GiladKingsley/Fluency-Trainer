@@ -1402,47 +1402,47 @@ User's definition: ${userDef}`
         {/* Welcome/Help Modal */}
         {showWelcomeModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">
-                  Welcome to Fluency Trainer!
+            <div className="bg-white rounded-xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                  Welcome to Fluency Trainer
                 </h2>
                 <button
                   onClick={() => setShowWelcomeModal(false)}
-                  className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+                  className="text-slate-400 hover:text-slate-600 text-2xl font-bold"
                 >
                   ×
                 </button>
               </div>
               
-              <div className="space-y-6 text-gray-700">
+              <div className="space-y-8 text-slate-700">
                 <div>
-                  <p className="text-lg mb-4">
+                  <p className="text-lg mb-4 leading-relaxed">
                     Enhance your <strong>spoken fluency</strong> by practicing active word retrieval. This app goes beyond passive reading to train your ability to produce language efficiently.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Three Training Modes:</h3>
+                  <h3 className="text-xl font-bold mb-4 text-slate-800">Three Training Modes</h3>
                   
                   <div className="space-y-4">
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <h4 className="font-semibold text-blue-800 mb-2">🧩 Normal Mode (Cloze Tests)</h4>
-                      <p className="text-sm text-blue-700">
+                    <div className="bg-slate-50 p-5 rounded-lg border border-slate-200">
+                      <h4 className="font-bold text-slate-800 mb-3">Normal Mode (Cloze Tests)</h4>
+                      <p className="text-slate-700 leading-relaxed">
                         Fill in the blanks in two sentences that use the same word in different contexts. This trains your ability to recognize words in various situations and strengthens mental connections between concepts and vocabulary.
                       </p>
                     </div>
                     
-                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                      <h4 className="font-semibold text-purple-800 mb-2">✍️ Reverse Mode (Word → Definition)</h4>
-                      <p className="text-sm text-purple-700">
+                    <div className="bg-slate-50 p-5 rounded-lg border border-slate-200">
+                      <h4 className="font-bold text-slate-800 mb-3">Reverse Mode (Word → Definition)</h4>
+                      <p className="text-slate-700 leading-relaxed">
                         Define words and get AI-powered feedback. Uses Google's Gemini AI to evaluate your definitions with detailed scoring (1-5) and helps you understand concepts more deeply.
                       </p>
                     </div>
 
-                    <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
-                      <h4 className="font-semibold text-indigo-800 mb-2">🔍 Definition Mode (Definition → Word)</h4>
-                      <p className="text-sm text-indigo-700">
+                    <div className="bg-slate-50 p-5 rounded-lg border border-slate-200">
+                      <h4 className="font-bold text-slate-800 mb-3">Definition Mode (Definition → Word)</h4>
+                      <p className="text-slate-700 leading-relaxed">
                         Guess words from Oxford Dictionary-style definitions. Improves your vocabulary recognition and helps you connect formal definitions to everyday words you know.
                       </p>
                     </div>
@@ -1450,35 +1450,35 @@ User's definition: ${userDef}`
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">🎯 Adaptive Difficulty</h3>
-                  <p className="text-sm">
+                  <h3 className="text-xl font-bold mb-4 text-slate-800">Adaptive Difficulty</h3>
+                  <p className="leading-relaxed mb-3">
                     The app automatically adjusts word difficulty based on your performance using scientific word frequency data:
                   </p>
-                  <ul className="text-sm mt-2 ml-4 space-y-1">
+                  <ul className="ml-6 space-y-2 leading-relaxed">
                     <li><strong>Success:</strong> You'll face rarer, more challenging words</li>
                     <li><strong>Struggle:</strong> The app provides more common, easier words</li>
                   </ul>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">🚀 Getting Started</h3>
-                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                    <p className="text-sm text-yellow-800 mb-2">
-                      <strong>First:</strong> Get your free Gemini API key from <a href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>
+                  <h3 className="text-xl font-bold mb-4 text-slate-800">Getting Started</h3>
+                  <div className="bg-slate-100 p-5 rounded-lg border border-slate-300">
+                    <p className="text-slate-800 mb-3 leading-relaxed">
+                      <strong>First:</strong> Get your free Gemini API key from <a href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-slate-800 underline font-medium">Google AI Studio</a>
                     </p>
-                    <p className="text-sm text-yellow-800">
-                      <strong>Then:</strong> Click the settings gear (⚙️) in the top-right to add your API key and start training!
+                    <p className="text-slate-800 leading-relaxed">
+                      <strong>Then:</strong> Click the settings gear in the top-right to add your API key and start training!
                     </p>
                   </div>
                 </div>
               </div>
               
-              <div className="flex justify-center mt-6">
+              <div className="flex justify-center mt-8">
                 <button
                   onClick={() => setShowWelcomeModal(false)}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="px-8 py-3 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium text-lg"
                 >
-                  Start Training!
+                  Start Training
                 </button>
               </div>
             </div>
