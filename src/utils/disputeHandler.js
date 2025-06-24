@@ -1,12 +1,12 @@
 // Dispute handling utility for ZipfTrainer
 // Handles AI-based dispute resolution for ambiguous answers
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 /**
  * Generates dispute resolution prompts for different training modes
  */
 const getDisputePrompt = (mode, context) => {
-  const basePrompt = `You are evaluating whether a user's answer should be considered correct despite initially being marked wrong. Be generous but fair - if the user's answer demonstrates understanding of the word's meaning in the given context, it should be accepted.
+  const basePrompt = `You are evaluating whether a user's answer should be considered correct despite initially being marked wrong. Be generous but fair - if the user's answer demonstrates understanding of the word's meaning in the given context, it should be accepted, if the word doesn't fit some of the context, for example if it fits only one of the sentences or definitions, it should be rejected.
 
 Respond with exactly this format:
 DECISION: [ACCEPT or REJECT]
@@ -19,15 +19,16 @@ EXPLANATION: [One sentence explaining your decision]`;
 Context: The user was given this cloze test sentence with a blank to fill in:
 "${context.clozeTest}"
 
-The correct answer was: "${context.correctAnswer}"
+The CORRECT WORD is: "${context.correctAnswer}"
 The user answered: "${context.userAnswer}"
 
 Additional context provided to user: ${context.helpContent || 'None'}
 
-Consider:
+Consider whether the user's answer should be accepted by evaluating:
 - Does the user's answer fit grammatically and semantically in the sentence?
-- Is it a valid alternative word that makes sense in this context?
-- Does it demonstrate understanding of the intended meaning?`;
+- Is it a synonym, alternative form, or closely related word to "${context.correctAnswer}"?
+- Does it demonstrate understanding of the intended meaning, even if not the exact target word?
+- Would a reasonable person consider "${context.userAnswer}" a valid alternative to "${context.correctAnswer}" in this entire context?`;
 
     case 'definition':
       return `${basePrompt}
@@ -35,15 +36,16 @@ Consider:
 Context: The user was given this definition and asked to identify the word:
 "${context.definition}"
 
-The correct answer was: "${context.correctAnswer}"
+The CORRECT WORD is: "${context.correctAnswer}"
 The user answered: "${context.userAnswer}"
 
 Additional context provided to user: ${context.helpContent || 'None'}
 
-Consider:
-- Does the user's answer match the given definition?
-- Is it a synonym or closely related word that fits the definition?
-- Does it demonstrate understanding of the concept described?`;
+Consider whether the user's answer should be accepted by evaluating:
+- Does the user's answer match or fit the given definition?
+- Is it a synonym, alternative term, or closely related word to "${context.correctAnswer}"?
+- Does it demonstrate understanding of the concept described in the definition?
+- Could "${context.userAnswer}" reasonably be considered a valid answer for the definition, even if "${context.correctAnswer}" was the target?`;
 
     case 'combo':
       return `${basePrompt}
@@ -51,22 +53,23 @@ Consider:
 Context: The user was given this combined content:
 ${context.comboContent}
 
-The correct answer was: "${context.correctAnswer}"
+The CORRECT WORD is: "${context.correctAnswer}"
 The user answered: "${context.userAnswer}"
 
-Consider:
+Consider whether the user's answer should be accepted by evaluating:
 - Does the user's answer fit any of the provided contexts (definition, examples, or usage)?
-- Is it a valid interpretation of the given information?
-- Does it demonstrate understanding of the word's meaning?`;
+- Is it a synonym, alternative form, or closely related word to "${context.correctAnswer}"?
+- Does it demonstrate understanding of the word's meaning from the given information?
+- Would "${context.userAnswer}" be a reasonable interpretation of the provided content, even if "${context.correctAnswer}" was the target?`;
 
     default:
       return `${basePrompt}
 
+The CORRECT WORD is: "${context.correctAnswer}"
 The user answered: "${context.userAnswer}"
-The correct answer was: "${context.correctAnswer}"
 Context: ${JSON.stringify(context)}
 
-Please evaluate if the user's answer should be accepted.`;
+Consider whether "${context.userAnswer}" should be accepted as a valid alternative to "${context.correctAnswer}" based on the provided context.`;
   }
 };
 
@@ -81,7 +84,7 @@ export const resolveDispute = async (apiKey, mode, context) => {
   const prompt = getDisputePrompt(mode, context);
 
   try {
-    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+    const response = await fetch(`${GEMINI_API_BASE}?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -91,11 +94,7 @@ export const resolveDispute = async (apiKey, mode, context) => {
           parts: [{
             text: prompt
           }]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 100,
-        }
+        }]
       })
     });
 
@@ -105,6 +104,10 @@ export const resolveDispute = async (apiKey, mode, context) => {
 
     const data = await response.json();
     const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+    if (!result) {
+      throw new Error('No response content received from API');
+    }
 
     // Parse the response format: DECISION: [ACCEPT/REJECT]\nEXPLANATION: [explanation]
     const decisionMatch = result.match(/DECISION:\s*(ACCEPT|REJECT)/i);
@@ -131,15 +134,15 @@ export const prepareDisputeContext = (mode, state) => {
     case 'normal':
       return {
         clozeTest: state.clozeTest,
-        correctAnswer: state.currentWord?.word,
+        correctAnswer: state.currentWord?.word || state.currentWord,
         userAnswer: state.userAnswer,
         helpContent: state.helpContent
       };
 
     case 'definition':
       return {
-        definition: state.wordDefinition,
-        correctAnswer: state.currentWord?.word,
+        definition: typeof state.wordDefinition === 'object' ? state.wordDefinition.definition : state.wordDefinition,
+        correctAnswer: state.currentWord?.word || state.currentWord,
         userAnswer: state.userGuess,
         helpContent: state.helpContent
       };
@@ -147,13 +150,13 @@ export const prepareDisputeContext = (mode, state) => {
     case 'combo':
       return {
         comboContent: state.comboContent,
-        correctAnswer: state.currentWord?.word,
+        correctAnswer: state.currentWord?.word || state.currentWord,
         userAnswer: state.userComboAnswer,
       };
 
     default:
       return {
-        correctAnswer: state.currentWord?.word,
+        correctAnswer: state.currentWord?.word || state.currentWord,
         userAnswer: state.userAnswer || state.userGuess,
         mode: mode
       };
