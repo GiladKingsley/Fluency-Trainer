@@ -149,7 +149,9 @@ export const prepareDisputeContext = (mode, state) => {
 
     case 'combo':
       return {
-        comboContent: state.comboContent,
+        comboContent: typeof state.comboContent === 'object' && state.comboContent 
+          ? `Definition:\n${state.comboContent.partOfSpeech ? `${state.comboContent.partOfSpeech}\n` : ''}${state.comboContent.definition}\n\nContext:\n"${state.comboContent.sentence}"`
+          : state.comboContent,
         correctAnswer: state.currentWord?.word || state.currentWord,
         userAnswer: state.userComboAnswer,
       };
