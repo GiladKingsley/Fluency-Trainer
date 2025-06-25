@@ -1475,7 +1475,7 @@ User's definition: ${userDef}`
                     <div className={`p-4 rounded-xl border-2 ${
                       normalScore === 1 
                         ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-zinc-700' 
-                        : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-zinc-700'
+                        : 'bg-red-50/40 dark:bg-red-500/10 border-red-100/60 dark:border-red-500/20'
                     }`}>
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
@@ -1529,7 +1529,7 @@ User's definition: ${userDef}`
                     )}
                     
                     {disputeError && (
-                      <div className="p-4 rounded-xl border-2 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-zinc-700 mb-4">
+                      <div className="p-4 rounded-xl border-2 bg-red-50/40 dark:bg-red-500/10 border-red-100/60 dark:border-red-500/20 mb-4">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="w-2 h-2 rounded-full bg-red-500"></div>
                           <h5 className="font-medium text-gray-800 dark:text-gray-200">
@@ -1542,7 +1542,7 @@ User's definition: ${userDef}`
                         <button
                           onClick={handleDispute}
                           disabled={disputeInProgress}
-                          className="px-3 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed text-sm font-medium transition-all duration-200"
+                          className="px-4 py-3 bg-orange-400 dark:bg-orange-600 text-white rounded-xl hover:bg-orange-500 dark:hover:bg-orange-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
                         >
                           {disputeInProgress ? 'Retrying...' : 'Try Again'}
                         </button>
@@ -1554,7 +1554,7 @@ User's definition: ${userDef}`
                         <button
                           onClick={handleDispute}
                           disabled={disputeInProgress}
-                          className="px-4 py-3 bg-orange-500 dark:bg-orange-600 text-white rounded-xl hover:bg-orange-600 dark:hover:bg-orange-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
+                          className="px-4 py-3 bg-orange-400 dark:bg-orange-600 text-white rounded-xl hover:bg-orange-500 dark:hover:bg-orange-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
                           title="Dispute this result - AI will re-evaluate your answer"
                         >
                           {disputeInProgress ? (
@@ -1569,7 +1569,7 @@ User's definition: ${userDef}`
                       )}
                       <button
                         onClick={handleNextWordNormal}
-                        className="flex-1 px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                        className="flex-1 px-6 py-4 bg-blue-400 text-white rounded-xl hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
                       >
                         Next Word
                       </button>
@@ -1664,7 +1664,7 @@ User's definition: ${userDef}`
                 <div className={`p-6 rounded-xl border-2 ${
                   score >= 3 
                     ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-zinc-700' 
-                    : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-zinc-700'
+                    : 'bg-red-50/40 dark:bg-red-500/10 border-red-100/60 dark:border-red-500/20'
                 }`}>
                   <div className="flex items-center justify-between mb-4">
                     <div>
@@ -1706,7 +1706,7 @@ User's definition: ${userDef}`
                 
                 <button
                   onClick={handleNextWordReverse}
-                  className="w-full px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="w-full px-6 py-4 bg-blue-400 text-white rounded-xl hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   Next Word
                 </button>
@@ -1846,7 +1846,7 @@ User's definition: ${userDef}`
                     <div className={`p-4 rounded-xl border-2 ${
                       definitionScore === 1 
                         ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-zinc-700' 
-                        : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-zinc-700'
+                        : 'bg-red-50/40 dark:bg-red-500/10 border-red-100/60 dark:border-red-500/20'
                     }`}>
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
@@ -1900,7 +1900,7 @@ User's definition: ${userDef}`
                     )}
                     
                     {disputeError && (
-                      <div className="p-4 rounded-xl border-2 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-zinc-700 mb-4">
+                      <div className="p-4 rounded-xl border-2 bg-red-50/40 dark:bg-red-500/10 border-red-100/60 dark:border-red-500/20 mb-4">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="w-2 h-2 rounded-full bg-red-500"></div>
                           <h5 className="font-medium text-gray-800 dark:text-gray-200">
@@ -1913,7 +1913,7 @@ User's definition: ${userDef}`
                         <button
                           onClick={handleDispute}
                           disabled={disputeInProgress}
-                          className="px-3 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed text-sm font-medium transition-all duration-200"
+                          className="px-4 py-3 bg-orange-400 dark:bg-orange-600 text-white rounded-xl hover:bg-orange-500 dark:hover:bg-orange-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
                         >
                           {disputeInProgress ? 'Retrying...' : 'Try Again'}
                         </button>
@@ -1925,7 +1925,7 @@ User's definition: ${userDef}`
                         <button
                           onClick={handleDispute}
                           disabled={disputeInProgress}
-                          className="px-4 py-3 bg-orange-500 dark:bg-orange-600 text-white rounded-xl hover:bg-orange-600 dark:hover:bg-orange-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
+                          className="px-4 py-3 bg-orange-400 dark:bg-orange-600 text-white rounded-xl hover:bg-orange-500 dark:hover:bg-orange-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
                           title="Dispute this result - AI will re-evaluate your answer"
                         >
                           {disputeInProgress ? (
@@ -1940,7 +1940,7 @@ User's definition: ${userDef}`
                       )}
                       <button
                         onClick={handleNextWordDefinition}
-                        className="flex-1 px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                        className="flex-1 px-6 py-4 bg-blue-400 text-white rounded-xl hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
                       >
                         Next Word
                       </button>
@@ -2045,7 +2045,7 @@ User's definition: ${userDef}`
                     <div className={`p-4 rounded-xl border-2 ${
                       comboScore === 1 
                         ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-zinc-700' 
-                        : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-zinc-700'
+                        : 'bg-red-50/40 dark:bg-red-500/10 border-red-100/60 dark:border-red-500/20'
                     }`}>
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
@@ -2099,7 +2099,7 @@ User's definition: ${userDef}`
                     )}
                     
                     {disputeError && (
-                      <div className="p-4 rounded-xl border-2 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-zinc-700 mb-4">
+                      <div className="p-4 rounded-xl border-2 bg-red-50/40 dark:bg-red-500/10 border-red-100/60 dark:border-red-500/20 mb-4">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="w-2 h-2 rounded-full bg-red-500"></div>
                           <h5 className="font-medium text-gray-800 dark:text-gray-200">
@@ -2112,7 +2112,7 @@ User's definition: ${userDef}`
                         <button
                           onClick={handleDispute}
                           disabled={disputeInProgress}
-                          className="px-3 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed text-sm font-medium transition-all duration-200"
+                          className="px-4 py-3 bg-orange-400 dark:bg-orange-600 text-white rounded-xl hover:bg-orange-500 dark:hover:bg-orange-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
                         >
                           {disputeInProgress ? 'Retrying...' : 'Try Again'}
                         </button>
@@ -2124,7 +2124,7 @@ User's definition: ${userDef}`
                         <button
                           onClick={handleDispute}
                           disabled={disputeInProgress}
-                          className="px-4 py-3 bg-orange-500 dark:bg-orange-600 text-white rounded-xl hover:bg-orange-600 dark:hover:bg-orange-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
+                          className="px-4 py-3 bg-orange-400 dark:bg-orange-600 text-white rounded-xl hover:bg-orange-500 dark:hover:bg-orange-700 disabled:bg-gray-400 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
                           title="Dispute this result - AI will re-evaluate your answer"
                         >
                           {disputeInProgress ? (
@@ -2139,7 +2139,7 @@ User's definition: ${userDef}`
                       )}
                       <button
                         onClick={handleNextWordCombo}
-                        className="flex-1 px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                        className="flex-1 px-6 py-4 bg-blue-400 text-white rounded-xl hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
                       >
                         Next Word
                       </button>
