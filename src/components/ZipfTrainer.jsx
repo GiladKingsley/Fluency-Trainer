@@ -2247,8 +2247,8 @@ User's definition: ${userDef}`
         {/* Welcome/Help Modal */}
         {showWelcomeModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-zinc-900 rounded-xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-zinc-700">
-              <div className="flex justify-between items-center mb-8">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl p-8 max-w-3xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-zinc-700">
+              <div className="flex justify-between items-center mb-6">
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent">
                   Welcome to Fluency Trainer
                 </h2>
@@ -2260,77 +2260,101 @@ User's definition: ${userDef}`
                 </button>
               </div>
               
-              <div className="space-y-8 text-slate-700 dark:text-slate-300">
-                <div>
-                  <p className="text-lg mb-4 leading-relaxed">
-                    Enhance your <strong>spoken fluency</strong> by practicing active word retrieval. This app goes beyond passive reading to train your ability to produce language efficiently.
-                  </p>
-                </div>
+              <div className="space-y-6 text-slate-700 dark:text-slate-300">
+                <p className="text-lg leading-relaxed text-center">
+                  Train your <strong>spoken fluency</strong> by practicing those frustrating "tip of the tongue" moments. 
+                  You know the concept, but can you find the word?
+                </p>
 
                 <div>
-                  <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-200">Four Training Modes</h3>
+                  <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-200 text-center">Four Training Modes</h3>
                   
-                  <div className="space-y-4">
-                    <div className="bg-slate-50 dark:bg-zinc-800 p-5 rounded-lg border border-slate-200 dark:border-zinc-700">
-                      <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-3">Normal Mode (Cloze Tests)</h4>
-                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                        Simulates "tip of the tongue" moments - the core fluency bottleneck. Fill in blanks in sentences to practice active word retrieval.
-                      </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-lg border bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-500/5 dark:to-blue-500/10 border-blue-200/50 dark:border-blue-500/20">
+                      <h4 className="font-bold mb-1 flex items-center text-blue-800 dark:text-blue-200">
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        Normal Mode
+                      </h4>
+                      <p className="text-sm mb-3 text-blue-700 dark:text-blue-300">Fill in the blanks - classic "tip of the tongue" training</p>
+                      <div className="text-sm bg-white dark:bg-zinc-800 p-3 rounded border">
+                        <p className="italic text-slate-600 dark:text-slate-400">"The _____ was so loud it woke everyone up."</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Definition: A sudden loud noise</p>
+                      </div>
                     </div>
                     
-                    <div className="bg-slate-50 dark:bg-zinc-800 p-5 rounded-lg border border-slate-200 dark:border-zinc-700">
-                      <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-3">Reverse Mode (Word → Definition)</h4>
-                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                        Define words yourself - a surprisingly difficult verbal exercise. Turns out humans aren't dictionaries! AI-powered grading.
-                      </p>
+                    <div className="p-4 rounded-lg border bg-gradient-to-br from-sky-50 to-sky-100 dark:from-sky-500/5 dark:to-sky-500/10 border-sky-200/50 dark:border-sky-500/20">
+                      <h4 className="font-bold mb-1 flex items-center text-sky-800 dark:text-sky-200">
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                        Reverse Mode
+                      </h4>
+                      <p className="text-sm mb-3 text-sky-700 dark:text-sky-300">Surprisingly hard! AI grades your definitions</p>
+                      <div className="text-sm bg-white dark:bg-zinc-800 p-3 rounded border">
+                        <p className="font-medium">Define: <span className="text-sky-600 dark:text-sky-400">Serendipity</span></p>
+                        <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Your turn to be the dictionary!</p>
+                      </div>
                     </div>
 
-                    <div className="bg-slate-50 dark:bg-zinc-800 p-5 rounded-lg border border-slate-200 dark:border-zinc-700">
-                      <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-3">Definition Mode (Definition → Word)</h4>
-                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                        Guess words from definitions - feels like a fun word game that might help improve your active vocabulary.
-                      </p>
+                    <div className="p-4 rounded-lg border bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-500/5 dark:to-cyan-500/10 border-cyan-200/50 dark:border-cyan-500/20">
+                      <h4 className="font-bold mb-1 flex items-center text-cyan-800 dark:text-cyan-200">
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        Definition Mode
+                      </h4>
+                      <p className="text-sm mb-3 text-cyan-700 dark:text-cyan-300">Classic word game that builds vocabulary</p>
+                      <div className="text-sm bg-white dark:bg-zinc-800 p-3 rounded border">
+                        <p className="italic text-slate-600 dark:text-slate-400">"A feeling of great happiness and excitement"</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">What word am I?</p>
+                      </div>
                     </div>
 
-                    <div className="bg-slate-50 dark:bg-zinc-800 p-5 rounded-lg border border-slate-200 dark:border-zinc-700">
-                      <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-3">Combo Mode (Definition + Context → Word)</h4>
-                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                        Definition + context sentence - removes ambiguity to the minimum by providing extra clues.
-                      </p>
+                    <div className="p-4 rounded-lg border bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-500/5 dark:to-teal-500/10 border-teal-200/50 dark:border-teal-500/20">
+                      <h4 className="font-bold mb-1 flex items-center text-teal-800 dark:text-teal-200">
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Combo Mode
+                      </h4>
+                      <p className="text-sm mb-3 text-teal-700 dark:text-teal-300">Definition + context = maximum clarity</p>
+                      <div className="text-sm bg-white dark:bg-zinc-800 p-3 rounded border">
+                        <p className="italic text-slate-600 dark:text-slate-400">"To make something less intense"</p>
+                        <p className="text-slate-600 dark:text-slate-400">"The music helped _____ her anxiety."</p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-200">Adaptive Difficulty</h3>
-                  <p className="leading-relaxed mb-3">
-                    The app automatically adjusts word difficulty based on your performance using scientific word frequency data:
-                  </p>
-                  <ul className="ml-6 space-y-2 leading-relaxed">
-                    <li><strong>Success:</strong> You'll face rarer, more challenging words</li>
-                    <li><strong>Struggle:</strong> The app provides more common, easier words</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-200">Getting Started</h3>
-                  <div className="bg-slate-100 dark:bg-zinc-800 p-5 rounded-lg border border-slate-300 dark:border-zinc-700">
-                    <p className="text-slate-800 dark:text-slate-200 mb-3 leading-relaxed">
-                      <strong>First:</strong> Get your free Gemini API key from <a href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer" className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 underline font-medium">Google AI Studio</a>
+                <div className="bg-slate-100 dark:bg-zinc-800 p-5 rounded-lg border border-slate-300 dark:border-zinc-700">
+                  <h3 className="text-lg font-bold mb-3 text-slate-800 dark:text-slate-200 flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Quick Start
+                  </h3>
+                  <div className="space-y-2">
+                    <p className="text-slate-800 dark:text-slate-200">
+                      <strong>1.</strong> Get your free API key: <a href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline font-medium">Google AI Studio</a>
                     </p>
-                    <p className="text-slate-800 dark:text-slate-200 leading-relaxed">
-                      <strong>Then:</strong> Click the settings gear in the top-right to add your API key and start training!
+                    <p className="text-slate-800 dark:text-slate-200">
+                      <strong>2.</strong> Click the settings ⚙️ to add your key
+                    </p>
+                    <p className="text-slate-800 dark:text-slate-200">
+                      <strong>3.</strong> Start training your fluency!
                     </p>
                   </div>
                 </div>
               </div>
               
-              <div className="flex justify-center mt-8">
+              <div className="flex justify-center mt-6">
                 <button
                   onClick={() => setShowWelcomeModal(false)}
-                  className="px-8 py-3 bg-slate-800 dark:bg-slate-700 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors font-medium text-lg"
+                  className="px-8 py-3 bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-700 dark:to-slate-600 text-white rounded-lg hover:from-slate-700 hover:to-slate-600 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all font-medium text-lg shadow-lg"
                 >
-                  Start Training
+                  Let's Go!
                 </button>
               </div>
             </div>
