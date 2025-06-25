@@ -25,4 +25,6 @@ dist-ssr
 
 # Extras
 repomix-output.txt
+repomix-output.xml
+.repomixignore
 # public/data/en_frequencies.json
