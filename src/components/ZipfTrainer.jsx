@@ -2271,13 +2271,13 @@ User's definition: ${userDef}`
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 rounded-lg border bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-500/5 dark:to-blue-500/10 border-blue-200/50 dark:border-blue-500/20">
-                      <h4 className="font-bold mb-1 flex items-center text-blue-800 dark:text-blue-200">
+                      <h4 className="font-bold mb-1 flex items-center text-gray-900 dark:text-white">
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                         </svg>
                         Normal Mode
                       </h4>
-                      <p className="text-sm mb-3 text-blue-700 dark:text-blue-300">Fill in the blanks - classic "tip of the tongue" training</p>
+                      <p className="text-sm mb-3 text-gray-700 dark:text-gray-300">Fill in the blanks - classic "tip of the tongue" training</p>
                       <div className="text-sm bg-white dark:bg-zinc-800 p-3 rounded border">
                         <p className="italic text-slate-600 dark:text-slate-400">"The _____ was so loud it woke everyone up."</p>
                         <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Definition: A sudden loud noise</p>
@@ -2285,27 +2285,27 @@ User's definition: ${userDef}`
                     </div>
                     
                     <div className="p-4 rounded-lg border bg-gradient-to-br from-sky-50 to-sky-100 dark:from-sky-500/5 dark:to-sky-500/10 border-sky-200/50 dark:border-sky-500/20">
-                      <h4 className="font-bold mb-1 flex items-center text-sky-800 dark:text-sky-200">
+                      <h4 className="font-bold mb-1 flex items-center text-gray-900 dark:text-white">
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                         </svg>
                         Reverse Mode
                       </h4>
-                      <p className="text-sm mb-3 text-sky-700 dark:text-sky-300">Surprisingly hard! AI grades your definitions</p>
+                      <p className="text-sm mb-3 text-gray-700 dark:text-gray-300">Surprisingly hard! AI grades your definitions</p>
                       <div className="text-sm bg-white dark:bg-zinc-800 p-3 rounded border">
-                        <p className="font-medium">Define: <span className="text-sky-600 dark:text-sky-400">Serendipity</span></p>
+                        <p className="font-medium">Define: <span className="text-gray-800 dark:text-gray-200">Serendipity</span></p>
                         <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Your turn to be the dictionary!</p>
                       </div>
                     </div>
 
                     <div className="p-4 rounded-lg border bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-500/5 dark:to-cyan-500/10 border-cyan-200/50 dark:border-cyan-500/20">
-                      <h4 className="font-bold mb-1 flex items-center text-cyan-800 dark:text-cyan-200">
+                      <h4 className="font-bold mb-1 flex items-center text-gray-900 dark:text-white">
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
                         Definition Mode
                       </h4>
-                      <p className="text-sm mb-3 text-cyan-700 dark:text-cyan-300">Classic word game that builds vocabulary</p>
+                      <p className="text-sm mb-3 text-gray-700 dark:text-gray-300">Classic word game that builds vocabulary</p>
                       <div className="text-sm bg-white dark:bg-zinc-800 p-3 rounded border">
                         <p className="italic text-slate-600 dark:text-slate-400">"A feeling of great happiness and excitement"</p>
                         <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">What word am I?</p>
@@ -2313,13 +2313,13 @@ User's definition: ${userDef}`
                     </div>
 
                     <div className="p-4 rounded-lg border bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-500/5 dark:to-teal-500/10 border-teal-200/50 dark:border-teal-500/20">
-                      <h4 className="font-bold mb-1 flex items-center text-teal-800 dark:text-teal-200">
+                      <h4 className="font-bold mb-1 flex items-center text-gray-900 dark:text-white">
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                         Combo Mode
                       </h4>
-                      <p className="text-sm mb-3 text-teal-700 dark:text-teal-300">Definition + context = maximum clarity</p>
+                      <p className="text-sm mb-3 text-gray-700 dark:text-gray-300">Definition + context = maximum clarity</p>
                       <div className="text-sm bg-white dark:bg-zinc-800 p-3 rounded border">
                         <p className="italic text-slate-600 dark:text-slate-400">"To make something less intense"</p>
                         <p className="text-slate-600 dark:text-slate-400">"The music helped _____ her anxiety."</p>
