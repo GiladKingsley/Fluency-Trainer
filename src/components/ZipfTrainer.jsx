@@ -1375,34 +1375,37 @@ User's definition: ${userDef}`
                 <p className="text-gray-600 dark:text-gray-400">Generating cloze sentences...</p>
               </div>
             ) : clozeTest ? (
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Question Prompt */}
+                <div className="text-left">
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                    Fill in the blanks with the same word:
+                  </h3>
+                </div>
+
                 {/* Both Sentences Display */}
                 <div className="bg-blue-50 dark:bg-blue-500/5 p-6 rounded-xl border border-blue-100 dark:border-zinc-800">
-                  <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
-                    <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
-                      Fill in the blanks with the same word:
-                    </h3>
-                    
+                  <div className="space-y-4">
                     {typeof clozeTest === 'object' ? (
-                      <div className="space-y-4">
+                      <>
                         <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
-                          <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Sentence 1:</div>
                           <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
                             {clozeTest.sentence1}
                           </p>
                         </div>
                         
                         <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
-                          <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Sentence 2:</div>
                           <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
                             {clozeTest.sentence2}
                           </p>
                         </div>
-                      </div>
+                      </>
                     ) : (
-                      <p className="text-xl text-gray-700 dark:text-gray-300 leading-relaxed">
-                        {clozeTest}
-                      </p>
+                      <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
+                        <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+                          {clozeTest}
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
