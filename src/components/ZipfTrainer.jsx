@@ -2347,6 +2347,20 @@ User's definition: ${userDef}`
                     </p>
                   </div>
                 </div>
+
+                <div className="bg-slate-50 dark:bg-zinc-800/50 p-4 rounded-lg border border-slate-200 dark:border-zinc-700/50">
+                  <h3 className="text-sm font-bold mb-2 text-slate-800 dark:text-slate-200 flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    More Info
+                  </h3>
+                  <div className="text-sm text-slate-600 dark:text-slate-400 space-y-2">
+                    <p><strong>The idea:</strong> Fluency likely improves through active word retrieval practice rather than just reading. This gamifies those "tip of the tongue" moments to potentially strengthen mental connections.</p>
+                    <p><strong>The challenge:</strong> A scoring system adjusts word rarity based on your performance - nail the tricky ones and face even rarer vocabulary!</p>
+                    <p><strong>Pro tip:</strong> Press Enter to submit and move to the next word.</p>
+                  </div>
+                </div>
               </div>
               
               <div className="flex justify-center mt-6">
