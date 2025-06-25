@@ -1384,7 +1384,7 @@ User's definition: ${userDef}`
                 </div>
 
                 {/* Both Sentences Display */}
-                <div className="bg-blue-50 dark:bg-blue-500/5 p-6 rounded-xl border border-blue-100 dark:border-zinc-800">
+                <div className="bg-gradient-to-br from-blue-50/30 to-slate-100 dark:bg-gradient-to-br dark:from-blue-500/5 dark:to-blue-600/5 p-6 rounded-xl border border-slate-200/60 dark:border-zinc-800">
                   <div className="space-y-4">
                     {typeof clozeTest === 'object' ? (
                       <>
@@ -1613,7 +1613,7 @@ User's definition: ${userDef}`
             ) : (
               <div className="space-y-6">
             {/* Word Display */}
-            <div className="text-center bg-blue-50 dark:bg-blue-500/5 p-8 rounded-xl border border-blue-100 dark:border-zinc-800">
+            <div className="text-center bg-gradient-to-br from-blue-50/30 to-slate-100 dark:bg-gradient-to-br dark:from-blue-500/5 dark:to-blue-600/5 p-8 rounded-xl border border-slate-200/60 dark:border-zinc-800">
               <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
                 <h2 className="text-4xl font-bold text-blue-600 dark:text-blue-400">
                   {currentWord}
@@ -1753,7 +1753,7 @@ User's definition: ${userDef}`
                 </div>
 
                 {/* Definition Display */}
-                <div className="bg-purple-50 dark:bg-purple-500/5 p-6 rounded-xl border border-purple-100 dark:border-zinc-800">
+                <div className="bg-gradient-to-br from-purple-50/30 to-slate-100 dark:bg-gradient-to-br dark:from-purple-500/5 dark:to-purple-600/5 p-6 rounded-xl border border-slate-200/60 dark:border-zinc-800">
                   <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-purple-200 dark:border-zinc-700">
                     {/* Display part of speech and definition */}
                     {typeof wordDefinition === 'object' && wordDefinition.partOfSpeech ? (
@@ -1992,7 +1992,7 @@ User's definition: ${userDef}`
                 </div>
 
                 {/* Definition Section */}
-                <div className="bg-emerald-50 dark:bg-emerald-500/5 p-6 rounded-xl border border-emerald-100 dark:border-zinc-800">
+                <div className="bg-gradient-to-br from-emerald-50/30 to-slate-100 dark:bg-gradient-to-br dark:from-emerald-500/5 dark:to-emerald-600/5 p-6 rounded-xl border border-slate-200/60 dark:border-zinc-800">
                   <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-emerald-200 dark:border-zinc-700">
                     <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Definition:</h4>
                     {comboContent.partOfSpeech && (
@@ -2007,7 +2007,7 @@ User's definition: ${userDef}`
                 </div>
 
                 {/* Context Sentence Section */}
-                <div className="bg-blue-50 dark:bg-blue-500/5 p-6 rounded-xl border border-blue-100 dark:border-zinc-800">
+                <div className="bg-gradient-to-br from-blue-50/30 to-slate-100 dark:bg-gradient-to-br dark:from-blue-500/5 dark:to-blue-600/5 p-6 rounded-xl border border-slate-200/60 dark:border-zinc-800">
                   <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-blue-200 dark:border-zinc-700">
                     <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Context:</h4>
                     <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed italic">
