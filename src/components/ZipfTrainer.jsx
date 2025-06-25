@@ -2185,19 +2185,19 @@ User's definition: ${userDef}`
                   />
                 </div>
                 
-                <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
+                <div className="bg-gradient-to-br from-blue-50/30 to-slate-100 dark:bg-gradient-to-br dark:from-blue-500/5 dark:to-blue-600/5 p-3 rounded-lg border border-slate-200/60 dark:border-zinc-800">
+                  <p className="text-sm text-gray-800 dark:text-gray-300 mb-2">
                     <strong>Get your free API key:</strong>
                   </p>
                   <a 
                     href="https://ai.google.dev/" 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                    className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:underline text-sm font-medium"
                   >
                     https://ai.google.dev/
                   </a>
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
                     Your API key is stored locally and never shared.
                   </p>
                 </div>
