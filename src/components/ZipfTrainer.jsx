@@ -1377,32 +1377,34 @@ User's definition: ${userDef}`
             ) : clozeTest ? (
               <div className="space-y-4">
                 {/* Both Sentences Display */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
-                  <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
-                    Fill in the blanks with the same word:
-                  </h3>
-                  
-                  {typeof clozeTest === 'object' ? (
-                    <div className="space-y-4">
-                      <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
-                        <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Sentence 1:</div>
-                        <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                          {clozeTest.sentence1}
-                        </p>
+                <div className="bg-blue-50 dark:bg-blue-500/5 p-6 rounded-xl border border-blue-100 dark:border-zinc-800">
+                  <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
+                    <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+                      Fill in the blanks with the same word:
+                    </h3>
+                    
+                    {typeof clozeTest === 'object' ? (
+                      <div className="space-y-4">
+                        <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
+                          <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Sentence 1:</div>
+                          <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+                            {clozeTest.sentence1}
+                          </p>
+                        </div>
+                        
+                        <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
+                          <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Sentence 2:</div>
+                          <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+                            {clozeTest.sentence2}
+                          </p>
+                        </div>
                       </div>
-                      
-                      <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
-                        <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Sentence 2:</div>
-                        <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                          {clozeTest.sentence2}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-xl text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {clozeTest}
-                    </p>
-                  )}
+                    ) : (
+                      <p className="text-xl text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {clozeTest}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Answer Input */}
@@ -1469,8 +1471,8 @@ User's definition: ${userDef}`
                   <div className="space-y-4">
                     <div className={`p-4 rounded-xl border-2 ${
                       normalScore === 1 
-                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800' 
-                        : 'bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30 border-red-200 dark:border-red-800'
+                        ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-zinc-700' 
+                        : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-zinc-700'
                     }`}>
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
@@ -1506,8 +1508,8 @@ User's definition: ${userDef}`
                     {disputeResult && (
                       <div className={`p-4 rounded-xl border-2 ${
                         disputeResult.accepted 
-                          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800' 
-                          : 'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-950/30 dark:to-slate-950/30 border-gray-200 dark:border-gray-800'
+                          ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-zinc-700' 
+                          : 'bg-gray-50 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700'
                       }`}>
                         <div className="flex items-center gap-2 mb-2">
                           <div className={`w-2 h-2 rounded-full ${
@@ -1524,7 +1526,7 @@ User's definition: ${userDef}`
                     )}
                     
                     {disputeError && (
-                      <div className="p-4 rounded-xl border-2 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30 border-red-200 dark:border-red-800 mb-4">
+                      <div className="p-4 rounded-xl border-2 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-zinc-700 mb-4">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="w-2 h-2 rounded-full bg-red-500"></div>
                           <h5 className="font-medium text-gray-800 dark:text-gray-200">
@@ -1564,7 +1566,7 @@ User's definition: ${userDef}`
                       )}
                       <button
                         onClick={handleNextWordNormal}
-                        className="flex-1 px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-500 dark:to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-700 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                        className="flex-1 px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
                       >
                         Next Word
                       </button>
@@ -1608,15 +1610,15 @@ User's definition: ${userDef}`
             ) : (
               <div className="space-y-6">
             {/* Word Display */}
-            <div className="text-center bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-8 rounded-xl border border-blue-100 dark:border-blue-800">
-              <div className="inline-block bg-white dark:bg-zinc-800 px-6 py-3 rounded-lg shadow-sm border border-blue-200 dark:border-blue-700 mb-4">
+            <div className="text-center bg-blue-50 dark:bg-blue-500/5 p-8 rounded-xl border border-blue-100 dark:border-zinc-800">
+              <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
                 <h2 className="text-4xl font-bold text-blue-600 dark:text-blue-400">
                   {currentWord}
                 </h2>
+                <p className="text-lg text-gray-700 dark:text-gray-300 mt-2">
+                  How would you define this word?
+                </p>
               </div>
-              <p className="text-lg text-gray-700 dark:text-gray-300">
-                How would you define this word?
-              </p>
             </div>
 
             {/* Definition Input */}
@@ -1658,8 +1660,8 @@ User's definition: ${userDef}`
               <div className="space-y-6">
                 <div className={`p-6 rounded-xl border-2 ${
                   score >= 3 
-                    ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800' 
-                    : 'bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30 border-red-200 dark:border-red-800'
+                    ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-zinc-700' 
+                    : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-zinc-700'
                 }`}>
                   <div className="flex items-center justify-between mb-4">
                     <div>
@@ -1679,7 +1681,7 @@ User's definition: ${userDef}`
                         ? 'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200' 
                         : 'bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200'
                     }`}>
-                      {score >= 3 ? 'Correct!' : 'Keep Trying'}
+                      {score >= 3 ? 'Good Definition!' : 'Needs Improvement'}
                     </span>
                   </div>
                   
@@ -1701,7 +1703,7 @@ User's definition: ${userDef}`
                 
                 <button
                   onClick={handleNextWordReverse}
-                  className="w-full px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-500 dark:to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-700 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="w-full px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   Next Word
                 </button>
@@ -1748,8 +1750,8 @@ User's definition: ${userDef}`
                 </div>
 
                 {/* Definition Display */}
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 p-6 rounded-xl border border-purple-100 dark:border-purple-800">
-                  <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-purple-200 dark:border-purple-700">
+                <div className="bg-purple-50 dark:bg-purple-500/5 p-6 rounded-xl border border-purple-100 dark:border-zinc-800">
+                  <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-purple-200 dark:border-zinc-700">
                     {/* Display part of speech and definition */}
                     {typeof wordDefinition === 'object' && wordDefinition.partOfSpeech ? (
                       <>
@@ -1840,8 +1842,8 @@ User's definition: ${userDef}`
                   <div className="space-y-4">
                     <div className={`p-4 rounded-xl border-2 ${
                       definitionScore === 1 
-                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800' 
-                        : 'bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30 border-red-200 dark:border-red-800'
+                        ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-zinc-700' 
+                        : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-zinc-700'
                     }`}>
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
@@ -1877,8 +1879,8 @@ User's definition: ${userDef}`
                     {disputeResult && (
                       <div className={`p-4 rounded-xl border-2 ${
                         disputeResult.accepted 
-                          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800' 
-                          : 'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-950/30 dark:to-slate-950/30 border-gray-200 dark:border-gray-800'
+                          ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-zinc-700' 
+                          : 'bg-gray-50 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700'
                       }`}>
                         <div className="flex items-center gap-2 mb-2">
                           <div className={`w-2 h-2 rounded-full ${
@@ -1895,7 +1897,7 @@ User's definition: ${userDef}`
                     )}
                     
                     {disputeError && (
-                      <div className="p-4 rounded-xl border-2 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30 border-red-200 dark:border-red-800 mb-4">
+                      <div className="p-4 rounded-xl border-2 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-zinc-700 mb-4">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="w-2 h-2 rounded-full bg-red-500"></div>
                           <h5 className="font-medium text-gray-800 dark:text-gray-200">
@@ -1935,7 +1937,7 @@ User's definition: ${userDef}`
                       )}
                       <button
                         onClick={handleNextWordDefinition}
-                        className="flex-1 px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-500 dark:to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-700 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                        className="flex-1 px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
                       >
                         Next Word
                       </button>
@@ -1987,8 +1989,8 @@ User's definition: ${userDef}`
                 </div>
 
                 {/* Definition Section */}
-                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 p-6 rounded-xl border border-emerald-100 dark:border-emerald-800">
-                  <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-emerald-200 dark:border-emerald-700">
+                <div className="bg-emerald-50 dark:bg-emerald-500/5 p-6 rounded-xl border border-emerald-100 dark:border-zinc-800">
+                  <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-emerald-200 dark:border-zinc-700">
                     <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Definition:</h4>
                     {comboContent.partOfSpeech && (
                       <span className="inline-block bg-emerald-100 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-200 px-3 py-1 rounded-full text-sm font-medium mb-3">
@@ -2002,8 +2004,8 @@ User's definition: ${userDef}`
                 </div>
 
                 {/* Context Sentence Section */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
-                  <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-blue-200 dark:border-blue-700">
+                <div className="bg-blue-50 dark:bg-blue-500/5 p-6 rounded-xl border border-blue-100 dark:border-zinc-800">
+                  <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-blue-200 dark:border-zinc-700">
                     <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Context:</h4>
                     <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed italic">
                       "{comboContent.sentence}"
@@ -2039,8 +2041,8 @@ User's definition: ${userDef}`
                   <div className="space-y-4">
                     <div className={`p-4 rounded-xl border-2 ${
                       comboScore === 1 
-                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800' 
-                        : 'bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30 border-red-200 dark:border-red-800'
+                        ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-zinc-700' 
+                        : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-zinc-700'
                     }`}>
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
@@ -2076,8 +2078,8 @@ User's definition: ${userDef}`
                     {disputeResult && (
                       <div className={`p-4 rounded-xl border-2 ${
                         disputeResult.accepted 
-                          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800' 
-                          : 'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-950/30 dark:to-slate-950/30 border-gray-200 dark:border-gray-800'
+                          ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-zinc-700' 
+                          : 'bg-gray-50 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700'
                       }`}>
                         <div className="flex items-center gap-2 mb-2">
                           <div className={`w-2 h-2 rounded-full ${
@@ -2094,7 +2096,7 @@ User's definition: ${userDef}`
                     )}
                     
                     {disputeError && (
-                      <div className="p-4 rounded-xl border-2 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30 border-red-200 dark:border-red-800 mb-4">
+                      <div className="p-4 rounded-xl border-2 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-zinc-700 mb-4">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="w-2 h-2 rounded-full bg-red-500"></div>
                           <h5 className="font-medium text-gray-800 dark:text-gray-200">
@@ -2134,7 +2136,7 @@ User's definition: ${userDef}`
                       )}
                       <button
                         onClick={handleNextWordCombo}
-                        className="flex-1 px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-500 dark:to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-700 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                        className="flex-1 px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
                       >
                         Next Word
                       </button>
